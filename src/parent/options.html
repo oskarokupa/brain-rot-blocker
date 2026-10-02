@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Brain Rot Blocker</title>
+  <link rel="stylesheet" href="pinStyles.css">
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0; padding: 24px;
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #fafafa; color: #1a1a1a;
+    }
+    @media (prefers-color-scheme: dark) { body { background: #17181a; color: #ececec; } }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    h2 { font-size: 14px; margin: 28px 0 10px; opacity: .7; text-transform: uppercase; letter-spacing: .04em; }
+    .sub { opacity: .65; margin: 0 0 20px; }
+    .status { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+    .pill { border-radius: 999px; padding: 3px 11px; font-weight: 600; font-size: 12px; }
+    .pill.locked { background: #b3261e; color: #fff; }
+    .pill.open { background: #1a7f37; color: #fff; }
+    .stats { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+    .stat { background: rgba(127,127,127,.1); border-radius: 10px; padding: 12px 16px; min-width: 120px; }
+    .stat b { display: block; font-size: 24px; }
+    .stat span { opacity: .65; font-size: 12px; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid rgba(127,127,127,.22); }
+    th { font-weight: 600; opacity: .7; }
+    .yes { color: #1a7f37; font-weight: 600; }
+    .no { color: #b3261e; }
+    .muted { opacity: .55; }
+    button {
+      font: inherit; padding: 7px 14px; border-radius: 8px;
+      border: 1px solid rgba(127,127,127,.35); background: transparent;
+      color: inherit; cursor: pointer;
+    }
+    button.primary { background: #065fd4; border-color: #065fd4; color: #fff; font-weight: 600; }
+    .wrap { overflow-x: auto; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <h1>Brain Rot Blocker</h1>
+  <p class="sub">Parent panel. This page stays reachable even when the challenge screen is not.</p>
+
+  <h2>Status</h2>
+  <div class="status" id="status"></div>
+  <div class="row">
+    <button class="primary" id="unlock">Unlock now</button>
+    <button id="timed-unlock">Unlock for 15 minutes</button>
+  </div>
+
+  <h2>Parent PIN</h2>
+  <p class="sub" id="pin-state">Checking...</p>
+  <div class="row">
+    <button id="set-pin">Set or change PIN</button>
+  </div>
+
+  <h2>Capture diagnostics</h2>
+  <div class="stats" id="stats"></div>
+  <div class="wrap"><table id="table"></table></div>
+  <p class="row"><button id="clear">Clear diagnostics</button></p>
+
+  <script src="options.js"></script>
+</body>
+</html>

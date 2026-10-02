@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "name": "Brain Rot Blocker",
+  "version": "0.1.0",
+  "description": "Earn the next video by clearing a short challenge about the one you just watched.",
+  "minimum_chrome_version": "111",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "alarms"
+  ],
+  "host_permissions": [
+    "*://*.youtubekids.com/*",
+    "https://api.anthropic.com/*"
+  ],
+  "background": {
+    "service_worker": "background/serviceWorker.js"
+  },
+  "options_page": "parent/options.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtubekids.com/*"
+      ],
+      "js": [
+        "content/mainWorldHook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "*://*.youtubekids.com/*"
+      ],
+      "js": [
+        "content/provider.js"
+      ],
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "ui/quiz.html",
+        "ui/styles.css"
+      ],
+      "matches": [
+        "*://*.youtubekids.com/*"
+      ]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

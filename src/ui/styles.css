@@ -1,0 +1,96 @@
+/* Neutral working styling for phase 2.
+   The challenge has to pass as part of YouTube Kids, matching the live site's
+   colours, type, radii and spacing. That work happens in phase 8, once the
+   locking and state logic is proven. Nothing here is a design decision. */
+
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --ink: #0f0f0f;
+  --muted: #606060;
+  --line: #e5e5e5;
+  --accent: #065fd4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f0f0f;
+    --ink: #f1f1f1;
+    --muted: #aaaaaa;
+    --line: #303030;
+    --accent: #3ea6ff;
+  }
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding:
+    calc(24px + env(safe-area-inset-top, 0px)) 16px
+    calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.quiz-root {
+  width: min(640px, 100%);
+}
+
+.dots {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.dot {
+  width: 40px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.dot.done { background: var(--accent); }
+.dot.current { background: var(--ink); }
+
+.counter {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.prompt {
+  margin: 0 0 24px;
+  font-size: clamp(24px, 4vw, 32px);
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option {
+  font: inherit;
+  text-align: left;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.option:hover { border-color: var(--accent); }
+.option:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.note,
+.loading {
+  margin-top: 32px;
+  color: var(--muted);
+  font-size: 13px;
+}

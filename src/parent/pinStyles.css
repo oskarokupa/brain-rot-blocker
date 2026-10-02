@@ -1,0 +1,69 @@
+/* PIN prompt. Shared by the options page and the challenge overlay, so it is
+   deliberately self-contained and does not inherit either page's tokens. */
+
+.pin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(2px);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.pin-panel {
+  width: min(320px, calc(100vw - 32px));
+  background: #fff;
+  color: #0f0f0f;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .3);
+}
+
+@media (prefers-color-scheme: dark) {
+  .pin-panel { background: #212121; color: #f1f1f1; }
+}
+
+.pin-title { margin: 0 0 18px; font-size: 16px; font-weight: 600; }
+
+.pin-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 12px; }
+
+.pin-dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid currentColor; opacity: .35;
+}
+.pin-dot.filled { background: currentColor; opacity: 1; }
+
+.pin-message { margin: 0 0 14px; min-height: 20px; font-size: 13px; color: #b3261e; }
+
+.pin-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.pin-key {
+  font: inherit;
+  font-size: 19px;
+  padding: 13px 0;
+  border-radius: 10px;
+  border: 1px solid rgba(127, 127, 127, .3);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.pin-key:hover:not(:disabled) { background: rgba(127, 127, 127, .14); }
+.pin-key:disabled { opacity: .4; cursor: default; }
+
+.pin-cancel {
+  font: inherit;
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: .6;
+  cursor: pointer;
+  padding: 4px 8px;
+}
