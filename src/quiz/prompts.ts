@@ -1,16 +1,27 @@
 /**
  * Prompt construction for quiz generation.
  *
- * The JSON Schema on the request already guarantees shape: the right number
- * of questions, the right option counts, the right field names. Everything
- * in here is aimed at content quality instead, which nothing downstream can
- * enforce as cleanly - the SOP's question-quality bar (understanding over
- * trivia, plausible distractors, no repeats) is a prompting problem, not a
- * schema problem. validate.ts still catches what this fails to prevent
- * (duplicate options, "all of the above", a correct answer not actually in
- * the options), and a validation failure triggers exactly one regenerate
- * attempt with the specific problems appended, handled in generate.ts.
+ * The JSON Schema on the request constrains field names and caps array
+ * lengths (`maxItems`), but cannot enforce a minimum above 1 - a live 400
+ * from the API confirmed `minItems` values other than 0 or 1 are rejected
+ * outright. That means the exact counts this prompt states explicitly below
+ * are the only thing asking for them at all; nothing stops a short response
+ * except validate.ts rejecting it afterwards and triggering a regenerate.
+ *
+ * Content quality (understanding over trivia, plausible distractors, no
+ * repeats) is a prompting problem on top of that, which is everything else
+ * below. validate.ts also catches what this fails to prevent (duplicate
+ * options, "all of the above", a correct answer not actually in the
+ * options), with the same one regenerate attempt before falling back.
  */
+
+const EXACT_COUNTS = `Write exactly this many of each, no more and no fewer:
+- singleSelect: exactly 3 questions, each with exactly 4 options
+- multiSelect: exactly 1 question with exactly 5 options
+- typed: exactly 1 question, with exactly 4 fallbackOptions and 3 to 5 exampleAnswers
+- spares: exactly 2 questions, same shape as singleSelect
+- remediation: exactly 6 questions, same shape as singleSelect plus a difficulty field
+Nothing validates these counts before the response reaches you. A short array is rejected as a whole, so undercounting wastes the attempt entirely.`;
 
 const QUALITY_RULES = `You are writing a short comprehension check for a child around 9 to 14 years old, about a video she just watched on YouTube Kids. The goal is to find out whether she was actually paying attention, not to catch her out on trivia.
 
@@ -47,7 +58,7 @@ export interface Prompt {
 }
 
 export function buildGenerationPrompt(input: GenerationPromptInput): Prompt {
-  const system = QUALITY_RULES + repeatAvoidanceSection(input.priorPrompts);
+  const system = `${EXACT_COUNTS}\n\n${QUALITY_RULES}${repeatAvoidanceSection(input.priorPrompts)}`;
 
   if (input.transcriptText) {
     return {

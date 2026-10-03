@@ -12,13 +12,22 @@
  * which is also what makes a shape pulled straight from the API still get
  * run through full validation: the schema prevents malformed JSON, not a
  * bad question.
+ *
+ * No array below sets `minItems` above 1. Confirmed against a live 400 from
+ * the API: "For 'array' type, 'minItems' values other than 0 or 1 are not
+ * supported." `maxItems` is unaffected and still pins the ceiling; the exact
+ * counts this schema used to enforce on both ends (3 single-select, 5
+ * multi-select options, 6 remediation questions, and so on) are instead
+ * enforced by validate.ts after the fact; a short response fails validation
+ * and triggers the same regenerate-then-fallback path a bad response of any
+ * other kind would.
  */
 
 const singleSelectItemSchema = {
   type: 'object',
   properties: {
     prompt: { type: 'string' },
-    options: { type: 'array', items: { type: 'string' }, minItems: 4, maxItems: 4 },
+    options: { type: 'array', items: { type: 'string' }, maxItems: 4 },
     correctIndex: { type: 'integer', minimum: 0, maximum: 3 },
     explanation: { type: 'string' },
   },
@@ -30,11 +39,10 @@ const multiSelectItemSchema = {
   type: 'object',
   properties: {
     prompt: { type: 'string' },
-    options: { type: 'array', items: { type: 'string' }, minItems: 5, maxItems: 5 },
+    options: { type: 'array', items: { type: 'string' }, maxItems: 5 },
     correctIndices: {
       type: 'array',
       items: { type: 'integer', minimum: 0, maximum: 4 },
-      minItems: 2,
       maxItems: 3,
     },
     explanation: { type: 'string' },
@@ -49,9 +57,9 @@ const typedItemSchema = {
     prompt: { type: 'string' },
     expectedConcept: { type: 'string' },
     keywords: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 6 },
-    exampleAnswers: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5 },
+    exampleAnswers: { type: 'array', items: { type: 'string' }, maxItems: 5 },
     explanation: { type: 'string' },
-    fallbackOptions: { type: 'array', items: { type: 'string' }, minItems: 4, maxItems: 4 },
+    fallbackOptions: { type: 'array', items: { type: 'string' }, maxItems: 4 },
     fallbackCorrectIndex: { type: 'integer', minimum: 0, maximum: 3 },
   },
   required: [
@@ -80,11 +88,11 @@ const remediationItemSchema = {
 export const GENERATION_JSON_SCHEMA = {
   type: 'object',
   properties: {
-    singleSelect: { type: 'array', items: singleSelectItemSchema, minItems: 3, maxItems: 3 },
+    singleSelect: { type: 'array', items: singleSelectItemSchema, maxItems: 3 },
     multiSelect: multiSelectItemSchema,
     typed: typedItemSchema,
-    spares: { type: 'array', items: singleSelectItemSchema, minItems: 2, maxItems: 2 },
-    remediation: { type: 'array', items: remediationItemSchema, minItems: 6, maxItems: 6 },
+    spares: { type: 'array', items: singleSelectItemSchema, maxItems: 2 },
+    remediation: { type: 'array', items: remediationItemSchema, maxItems: 6 },
   },
   required: ['singleSelect', 'multiSelect', 'typed', 'spares', 'remediation'],
   additionalProperties: false,
