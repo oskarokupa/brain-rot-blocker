@@ -27,6 +27,13 @@
  * after the fact, which rejects a short or long array exactly as it already
  * rejects every other malformed shape and triggers the same
  * regenerate-then-fallback path.
+ *
+ * A third live 400 added one more restriction to the pile: `minimum` and
+ * `maximum` are rejected outright on `type: integer` (confirmed `number`
+ * accepts them, and confirmed `integer` with `enum` works, in direct tests
+ * against the live API). Every bounded integer below uses `enum` for exactly
+ * that reason - not a style preference, the only way to bound an integer that
+ * this API's structured outputs will accept.
  */
 
 const singleSelectItemSchema = {
@@ -34,7 +41,7 @@ const singleSelectItemSchema = {
   properties: {
     prompt: { type: 'string' },
     options: { type: 'array', items: { type: 'string' } },
-    correctIndex: { type: 'integer', minimum: 0, maximum: 3 },
+    correctIndex: { type: 'integer', enum: [0, 1, 2, 3] },
     explanation: { type: 'string' },
   },
   required: ['prompt', 'options', 'correctIndex', 'explanation'],
@@ -48,7 +55,7 @@ const multiSelectItemSchema = {
     options: { type: 'array', items: { type: 'string' } },
     correctIndices: {
       type: 'array',
-      items: { type: 'integer', minimum: 0, maximum: 4 },
+      items: { type: 'integer', enum: [0, 1, 2, 3, 4] },
     },
     explanation: { type: 'string' },
   },
@@ -65,7 +72,7 @@ const typedItemSchema = {
     exampleAnswers: { type: 'array', items: { type: 'string' } },
     explanation: { type: 'string' },
     fallbackOptions: { type: 'array', items: { type: 'string' } },
-    fallbackCorrectIndex: { type: 'integer', minimum: 0, maximum: 3 },
+    fallbackCorrectIndex: { type: 'integer', enum: [0, 1, 2, 3] },
   },
   required: [
     'prompt',
