@@ -198,10 +198,22 @@ function watchForNavigation(): void {
  * ------------------------------------------------------------------ */
 
 function sendToWorker(event: ProviderEvent): void {
-  chrome.runtime.sendMessage({ kind: 'providerEvent', providerId: 'youtubeKids', event }).catch(() => {
-    // The worker may be asleep or the extension reloading. State lives in
-    // storage, so a dropped progress tick is not worth retrying.
-  });
+  try {
+    // When the extension is reloaded (a normal part of development, or a
+    // Chrome update), a content script already injected into an open tab is
+    // left holding a dead reference: chrome.runtime.sendMessage throws
+    // synchronously here, before it ever returns a promise, so a plain
+    // .catch() on the result never attaches and this becomes an uncaught
+    // error instead of the harmless dropped event it actually is. The page
+    // only gets a working copy again once it is reloaded, which is expected
+    // and not something this script can fix for itself.
+    chrome.runtime.sendMessage({ kind: 'providerEvent', providerId: 'youtubeKids', event }).catch(() => {
+      // The worker may be asleep or the extension reloading. State lives in
+      // storage, so a dropped progress tick is not worth retrying.
+    });
+  } catch {
+    // Extension context invalidated. Nothing to do until the page reloads.
+  }
 }
 
 /**
