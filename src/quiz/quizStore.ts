@@ -11,18 +11,27 @@
 
 import { CONFIG } from '../config.js';
 import { dispatch } from '../core/store.js';
-import { buildFallbackQuiz } from './build.js';
+import type { GenerationContent } from './llm/generate.js';
+import { generateQuiz } from './llm/generate.js';
+import { gradeTypedWithLlm } from './llm/gradeTyped.js';
 import {
   currentQuestion,
   discardCurrentQuestion as discardFromRound,
   isRoundComplete,
+  recordExternalVerdict,
   replaceCurrentQuestion,
   scoreRound,
   startRound,
   submitAnswer as submitToRound,
   type RoundState,
 } from './engine.js';
-import { recordUsed, recordVideoQuestions, type RecentIds, type VideoHistory } from './history.js';
+import {
+  promptsForVideo,
+  recordUsed,
+  recordVideoQuestions,
+  type RecentIds,
+  type VideoHistory,
+} from './history.js';
 import type { AnswerResponse, Question, Quiz } from './schema.js';
 
 const QUIZ_KEY = 'quiz.v1';
@@ -64,10 +73,14 @@ async function addRecentIds(ids: string[]): Promise<void> {
   await chrome.storage.local.set({ [RECENT_IDS_KEY]: recent });
 }
 
+async function readVideoHistory(): Promise<VideoHistory> {
+  const stored = await chrome.storage.local.get(VIDEO_HISTORY_KEY);
+  return (stored[VIDEO_HISTORY_KEY] as VideoHistory) ?? [];
+}
+
 async function recordVideoHistory(videoId: string | null, prompts: string[]): Promise<void> {
   if (!videoId) return;
-  const stored = await chrome.storage.local.get(VIDEO_HISTORY_KEY);
-  const history = (stored[VIDEO_HISTORY_KEY] as VideoHistory) ?? [];
+  const history = await readVideoHistory();
   await chrome.storage.local.set({
     [VIDEO_HISTORY_KEY]: recordVideoQuestions(history, videoId, prompts),
   });
@@ -77,10 +90,25 @@ async function recordVideoHistory(videoId: string | null, prompts: string[]): Pr
  * Starting a challenge
  * ------------------------------------------------------------------ */
 
-export function startMainQuiz(videoId: string | null, durationSeconds: number | null): Promise<void> {
+export function startMainQuiz(
+  videoId: string | null,
+  durationSeconds: number | null,
+  content: GenerationContent,
+): Promise<void> {
   return serialize(async () => {
     const recent = await readRecentIds();
-    const quiz = buildFallbackQuiz({ videoId, durationSeconds, recentQuestionIds: recent });
+    const priorPromptsForVideo = videoId ? promptsForVideo(await readVideoHistory(), videoId) : [];
+
+    // generateQuiz is the one place the transcript -> metadata -> bank degrade
+    // chain lives. Whatever comes back is already a complete, validated Quiz
+    // regardless of which tier produced it.
+    const quiz = await generateQuiz({
+      videoId,
+      durationSeconds,
+      content,
+      recentQuestionIds: recent,
+      priorPromptsForVideo,
+    });
     const roundState = startRound(quiz.questions, quiz.spares, CONFIG.quiz.maxDiscardsPerQuiz);
 
     await writeDoc({ quiz, round: 0, roundState });
@@ -165,6 +193,31 @@ export type SubmitOutcome =
   | { kind: 'needsRetry'; question: Question }
   | { kind: 'noActiveQuestion' };
 
+/** Persists a round and reports it, finishing the round if it is complete. */
+async function respondWithRound(
+  doc: QuizDocument,
+  question: Question,
+  roundState: RoundState,
+  correct: boolean,
+): Promise<SubmitOutcome> {
+  await writeDoc({ ...doc, roundState });
+
+  if (!isRoundComplete(roundState)) {
+    return { kind: 'answered', correct, explanation: question.explanation };
+  }
+
+  const score = scoreRound(roundState);
+  const cleared = await finishRound(doc.round, score.passed);
+  return {
+    kind: 'roundComplete',
+    correct,
+    explanation: question.explanation,
+    correctCount: score.correctCount,
+    total: score.total,
+    cleared,
+  };
+}
+
 export function submitAnswer(response: AnswerResponse): Promise<SubmitOutcome> {
   return serialize(async () => {
     const doc = await readDoc();
@@ -176,33 +229,30 @@ export function submitAnswer(response: AnswerResponse): Promise<SubmitOutcome> {
     const result = submitToRound(doc.roundState, response);
 
     if (result.uncertain) {
-      // No LLM in this phase, which is exactly the "LLM unavailable" branch
-      // the design calls for: swap to the pre-built multiple-choice twin
-      // rather than leave her waiting on a verdict that will never arrive.
-      if (question.type !== 'typed') return { kind: 'noActiveQuestion' };
+      if (question.type !== 'typed' || response.type !== 'typed') {
+        return { kind: 'noActiveQuestion' };
+      }
+
+      // Local matching could not reach a confident verdict. The LLM is the
+      // next tier up; a hard timeout on that call is what keeps this from
+      // ever turning into an indefinite wait on her "Checking..." screen.
+      const llmVerdict = await gradeTypedWithLlm(question.expectedConcept, response.text);
+      if (llmVerdict !== null) {
+        const roundState = recordExternalVerdict(doc.roundState, question, response, llmVerdict);
+        return respondWithRound(doc, question, roundState, llmVerdict);
+      }
+
+      // No LLM verdict available at all (no key, network failure, timeout):
+      // swap to the pre-built multiple-choice twin rather than leave her
+      // waiting on a verdict that will never arrive. Does not count as a
+      // discard and does not cost her anything.
       const replacement = question.fallbackMultipleChoice;
       const roundState = replaceCurrentQuestion(doc.roundState, replacement);
       await writeDoc({ ...doc, roundState });
       return { kind: 'needsRetry', question: replacement };
     }
 
-    await writeDoc({ ...doc, roundState: result.round });
-
-    if (!isRoundComplete(result.round)) {
-      return { kind: 'answered', correct: result.correct, explanation: question.explanation };
-    }
-
-    const score = scoreRound(result.round);
-    const cleared = await finishRound(doc.round, score.passed);
-
-    return {
-      kind: 'roundComplete',
-      correct: result.correct,
-      explanation: question.explanation,
-      correctCount: score.correctCount,
-      total: score.total,
-      cleared,
-    };
+    return respondWithRound(doc, question, result.round, result.correct);
   });
 }
 

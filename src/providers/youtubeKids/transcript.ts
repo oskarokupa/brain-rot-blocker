@@ -69,9 +69,3 @@ export function buildTranscript(
     coverage: computeCoverage(cues, durationSeconds),
   };
 }
-
-/** Flattened text, capped, for sending upstream. */
-export function transcriptToText(transcript: Transcript, maxChars: number): string {
-  const text = transcript.cues.map((c) => c.text).join(' ');
-  return text.length <= maxChars ? text : text.slice(0, maxChars);
-}

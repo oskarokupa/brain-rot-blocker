@@ -30,6 +30,8 @@ import {
   verifyPin,
 } from '../parent/pin.js';
 import type { ProviderEvent } from '../providers/types.js';
+import { transcriptToText } from '../providers/transcriptUtil.js';
+import { apiKeyHint, hasApiKey, setApiKey } from '../quiz/llm/apiKeyStore.js';
 import type { AnswerResponse } from '../quiz/schema.js';
 import {
   discardCurrentQuestion,
@@ -79,11 +81,10 @@ setEffectRunner(async (effects: Effect[]) => {
         break;
 
       case 'startGeneration':
-        // The LLM path (transcript and metadata derived questions) is phase 4.
-        // Until then every quiz comes from the local fallback bank, which is
-        // also exactly what a genuine LLM or network failure degrades to, so
-        // this is not a placeholder so much as one end of the real fallback.
-        await startMainQuiz(effect.videoId, durations.get(effect.videoId) ?? null);
+        await startMainQuiz(effect.videoId, durations.get(effect.videoId) ?? null, {
+          transcriptText: await waitForTranscript(effect.videoId),
+          metadata: metadataCache.get(effect.videoId) ?? null,
+        });
         break;
 
       case 'reportFault':
@@ -106,21 +107,71 @@ attachLockListeners(async () => {
   return isLocked(state, Date.now());
 });
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Generation starts the moment the watch threshold crosses, which on a short
+ * video can arrive before the caption fetch has landed at all - the threshold
+ * is seconds of watching, the caption request is a network round trip, and
+ * nothing ties the two together otherwise. This waits briefly for the
+ * transcript to reach the configured coverage before giving up and letting
+ * generation proceed with whatever is cached, including nothing at all.
+ *
+ * This happens in the quizPreparing phase, before anything is locked, so a
+ * few seconds of extra wait here costs nothing she can feel - she is still
+ * watching the video it is about.
+ */
+const TRANSCRIPT_WAIT_TIMEOUT_MS = 5000;
+const TRANSCRIPT_WAIT_POLL_MS = 250;
+
+async function waitForTranscript(videoId: string): Promise<string | null> {
+  const deadline = Date.now() + TRANSCRIPT_WAIT_TIMEOUT_MS;
+  for (;;) {
+    const cached = transcriptCache.get(videoId);
+    if (cached && cached.coverage >= CONFIG.llm.generateAtTranscriptFraction) return cached.text;
+    if (Date.now() >= deadline) return cached?.text ?? null;
+    await sleep(TRANSCRIPT_WAIT_POLL_MS);
+  }
+}
+
 /* ------------------------------------------------------------------ *
  * Provider events
  * ------------------------------------------------------------------ */
 
 /**
- * Duration is needed to work out the per-video threshold, but it arrives on a
- * separate event from the progress ticks that use it. Storing it per video
- * keeps the state machine pure and free of lookups.
+ * Duration, metadata and the transcript all arrive on separate events from
+ * the ones that need them later, and are per-video state the state machine
+ * itself must stay free of (it is pure, provider-independent, and video
+ * content is a quiz concern, not a lock concern). Caching them here, in the
+ * worker's own module scope, is also what keeps the privacy design honest:
+ * "transcripts live in memory" from the SOP means exactly this, not storage -
+ * there is no durable record of what a video was actually about, only of the
+ * questions that got asked.
+ *
+ * Module scope does not survive a worker restart, which is fine: if the
+ * worker dies mid-video, startGeneration fires again from a later progress
+ * event with no cache entry yet, and generateQuiz's metadata/bank tiers below
+ * transcript cover exactly that gap.
  */
 const durations = new Map<string, number>();
+const metadataCache = new Map<string, { title: string | null; channel: string | null; description: string | null }>();
+const transcriptCache = new Map<string, { text: string; coverage: number }>();
 
 async function handleProviderEvent(event: ProviderEvent): Promise<void> {
   if (event.type === 'metadataUpdated' || event.type === 'videoStarted') {
-    const { videoId, durationSeconds } = event.metadata;
+    const { videoId, durationSeconds, title, channel, description } = event.metadata;
     if (durationSeconds) durations.set(videoId, durationSeconds);
+    if (title || description) metadataCache.set(videoId, { title, channel, description });
+  }
+
+  if (event.type === 'transcriptUpdated') {
+    const { videoId, coverage } = event.transcript;
+    transcriptCache.set(videoId, {
+      text: transcriptToText(event.transcript, CONFIG.llm.maxTranscriptChars),
+      coverage,
+    });
   }
 
   const videoId =
@@ -159,7 +210,9 @@ type Message =
   | { kind: 'parentEndSession' }
   | { kind: 'getState' }
   | { kind: 'clearLock' }
-  | { kind: 'clearDiagnostics' };
+  | { kind: 'clearDiagnostics' }
+  | { kind: 'parentGetApiKeyStatus' }
+  | { kind: 'parentSetApiKey'; key: string };
 
 /**
  * Parent actions all sit behind a verified PIN session. An extension with no
@@ -234,6 +287,12 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
       return reply(requireSession(() => resetState().then(() => forceReturnToYoutubeKids())));
     case 'clearDiagnostics':
       return reply(chrome.storage.local.remove('diagnostics.v1'));
+    case 'parentGetApiKeyStatus':
+      // The key itself never leaves the worker, only whether one is set and
+      // a masked hint, the same spirit as the PIN never being shown back.
+      return reply(Promise.all([hasApiKey(), apiKeyHint()]).then(([set, hint]) => ({ set, hint })));
+    case 'parentSetApiKey':
+      return reply(requireSession(() => setApiKey(message.key)));
     default:
       return false;
   }

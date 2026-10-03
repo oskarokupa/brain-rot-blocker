@@ -3,8 +3,8 @@ import {
   parseJson3,
   computeCoverage,
   buildTranscript,
-  transcriptToText,
 } from '../src/providers/youtubeKids/transcript.js';
+import { transcriptToText } from '../src/providers/transcriptUtil.js';
 
 /** Shaped like the real player response captured from /api/timedtext. */
 const SAMPLE = JSON.stringify({

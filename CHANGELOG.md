@@ -2,6 +2,72 @@
 
 All notable changes to this project are logged here, most recent first.
 
+## 2026-10-05 - Phase 4: LLM integration
+
+Real video-based questions. Every quiz is now about the video she actually
+watched when a transcript is available, rather than only ever coming from the
+offline Spanish bank.
+
+- Raw-fetch Anthropic client (`src/quiz/llm/anthropic.ts`), not the
+  `@anthropic-ai/sdk` npm package. Deliberate: this project's own spec says
+  to avoid dependencies beyond esbuild/TypeScript/vitest, an MV3 service
+  worker isn't in the SDK's documented supported runtimes, and only two call
+  shapes are ever needed. Uses `output_config.format` (`type: "json_schema"`)
+  for server-guaranteed structure either way - that part of the SDK's benefit
+  isn't SDK-exclusive.
+- Fixed a real bug this surfaced: `CONFIG.llm.model` was
+  `claude-haiku-4-5-20251001`. Current model ids never carry a date suffix;
+  corrected to `claude-haiku-4-5`.
+- Structured generation requests a flat bundle (3 single-select, 1 multi-select,
+  1 typed, 2 spares, 6 remediation at two difficulty tiers) rather than a
+  discriminated union, since JSON Schema support for that shape isn't
+  something to assume. Converted to the normal `Question[]` shape and run
+  through the same `validate.ts` phase 3 built - one regenerate attempt with
+  the specific problems named, then the fallback bank.
+- The full degrade chain lives in one place (`quiz/llm/generate.ts`): no API
+  key, no transcript and no metadata, a timeout, a rate limit, or two failed
+  validation attempts all end up at the bank. Never surfaces as an error to
+  the child.
+- Typed-answer grading gained its real second tier: an uncertain local verdict
+  now gets a binary LLM judgment under a hard 2.5s timeout before falling
+  back to the multiple-choice swap, which is now only what happens when the
+  LLM genuinely isn't available.
+- Repeat-avoidance wired in: prior questions asked about a rewatched video are
+  read from history and named in the prompt as things not to repeat or
+  closely paraphrase.
+- API key entered via the parent panel (`chrome.storage.local`, PIN-gated to
+  set, never written to disk as a file, never displayed back - only a masked
+  hint once set). No key configured is a fully supported, permanent state:
+  every challenge just uses the offline bank.
+- 40 new tests (231 total): the client's HTTP-status classification and
+  timeout handling against a mocked `fetch`, the full generate.ts degrade
+  chain against a mocked API boundary, the typed-grading null-vs-verdict
+  contract, and the API key store.
+- `transcriptToText` moved out of `providers/youtubeKids/` to
+  `providers/transcriptUtil.ts`: it has no provider-specific logic, and the
+  service worker needed it without importing from inside a specific
+  provider's folder, which the architecture doesn't allow.
+
+**One more real gap, found by re-reading the plan against what got built:**
+`CONFIG.llm.generateAtTranscriptFraction` (60%) was defined but never read -
+generation fired the instant the watch threshold crossed, using whatever was
+in the transcript cache at that exact moment, which is empty on a short video
+if the caption fetch hasn't landed yet (the threshold is seconds watched, the
+caption fetch is a network round trip, nothing tied the two together).
+`startGeneration` now waits up to 5 seconds for coverage to reach the
+configured fraction before proceeding with whatever is available. This costs
+nothing user-facing: it happens in `quizPreparing`, before anything is locked,
+while she is still watching the video it's generating questions about.
+
+**Unconfirmed, flagged in NOTES.md:** whether the
+`anthropic-dangerous-direct-browser-access` header raw fetch sends is still
+the correct (or even necessary) mechanism - current live docs didn't name it
+explicitly. Low risk either way; flagged for the first real test with a key.
+
+**Known gaps:** neutral styling rather than native YouTube Kids (phase 8), no
+XP or celebration polish yet (phase 8).
+
+
 ## 2026-10-03 - Phase 3: the real quiz engine
 
 Replaces the three hard-coded dummy questions with a working challenge: real

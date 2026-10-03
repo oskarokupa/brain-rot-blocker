@@ -68,6 +68,21 @@ export function submitAnswer(round: RoundState, response: AnswerResponse): Submi
 }
 
 /**
+ * Records a verdict decided outside this module's own grading - the LLM's
+ * binary judgment on a typed answer local matching could not resolve.
+ * Appends directly rather than re-grading, since gradeAnswer would only
+ * reach 'uncertain' again for the same input.
+ */
+export function recordExternalVerdict(
+  round: RoundState,
+  question: Question,
+  response: AnswerResponse,
+  correct: boolean,
+): RoundState {
+  return { ...round, answers: [...round.answers, { question, response, correct }] };
+}
+
+/**
  * Swaps the current question for a replacement without touching the discard
  * allowance or the spares queue. Used when a typed answer comes back
  * uncertain and there is no LLM available to break the tie: the fallback

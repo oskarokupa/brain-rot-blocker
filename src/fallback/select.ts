@@ -44,8 +44,12 @@ function pickType(
   return [...fresh, ...stale].slice(0, count);
 }
 
-/** The type mix for a quiz of this length. Fixed for five; relaxed below that. */
-function typeMixFor(questionCount: number): Array<[QuestionType, number]> {
+/**
+ * The type mix for a quiz of this length. Fixed for five; relaxed below that.
+ * Exported because the LLM path reuses this same length policy to trim a
+ * freshly generated 3/1/1 bundle down to size, rather than duplicating it.
+ */
+export function typeMixFor(questionCount: number): Array<[QuestionType, number]> {
   if (questionCount >= 5) return [['singleSelect', 3], ['typed', 1], ['multiSelect', 1]];
   if (questionCount === 3) return [['singleSelect', 2], ['typed', 1]];
   return [['singleSelect', 1]];

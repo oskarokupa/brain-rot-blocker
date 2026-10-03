@@ -56,8 +56,8 @@ interface Reply<T> {
   value?: T;
 }
 
-async function send<T>(kind: string): Promise<Reply<T> | undefined> {
-  return chrome.runtime.sendMessage({ kind }).catch(() => undefined) as Promise<Reply<T> | undefined>;
+async function send<T>(kind: string, extra: Record<string, unknown> = {}): Promise<Reply<T> | undefined> {
+  return chrome.runtime.sendMessage({ kind, ...extra }).catch(() => undefined) as Promise<Reply<T> | undefined>;
 }
 
 /* ------------------------------------------------------------------ *
@@ -219,6 +219,32 @@ async function refreshPinState(): Promise<void> {
       : 'No PIN set. Anyone can unlock. Set one now.';
 }
 
+interface ApiKeyStatus {
+  set: boolean;
+  hint: string | null;
+}
+
+async function refreshApiKeyState(): Promise<void> {
+  const reply = await send<ApiKeyStatus>('parentGetApiKeyStatus');
+  const el = document.getElementById('api-key-state');
+  if (!el) return;
+  el.textContent = reply?.value?.set
+    ? `A key is set (${reply.value.hint}). Saving a new one replaces it.`
+    : 'No key set. Challenges use the offline question bank.';
+}
+
+document.getElementById('save-api-key')!.addEventListener('click', async () => {
+  const input = document.getElementById('api-key-input') as HTMLInputElement;
+  const key = input.value.trim();
+  if (key.length === 0) return;
+
+  await withParentAuth('Parent access', async () => {
+    await send('parentSetApiKey', { key });
+  });
+  input.value = '';
+  void refreshApiKeyState();
+});
+
 document.getElementById('clear')!.addEventListener('click', async () => {
   await send('clearDiagnostics');
   void render();
@@ -227,6 +253,7 @@ document.getElementById('clear')!.addEventListener('click', async () => {
 chrome.storage.onChanged.addListener(() => void render());
 setInterval(() => void render(), 5000);
 void render();
+void refreshApiKeyState();
 void refreshPinState();
 
 // No imports in this file, so this marks it a module rather than a global script.

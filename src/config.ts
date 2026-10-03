@@ -54,7 +54,11 @@ export const CONFIG = {
 
   /** Language model access. */
   llm: {
-    model: 'claude-haiku-4-5-20251001',
+    // No date suffix: current Anthropic model ids are stable names, not
+    // dated snapshots. Haiku 4.5 is a deliberate choice for this workload -
+    // quick structured generation and a binary typed-answer judgment, not
+    // anything that benefits from a larger or slower model.
+    model: 'claude-haiku-4-5',
     apiUrl: 'https://api.anthropic.com/v1/messages',
     apiVersion: '2023-06-01',
     maxTokens: 4096,

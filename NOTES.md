@@ -52,6 +52,33 @@ tools instead of Bash, or avoid the trigger substring in the shell command
 This is worth fixing at the hook level — it should check the actual path(s) a
 command touches, not grep the raw command string for lookalike substrings.
 
+## Unconfirmed: the browser-access header on raw Anthropic API calls
+
+`src/quiz/llm/anthropic.ts` sends `anthropic-dangerous-direct-browser-access: true`
+on every request. This is the header the SDK has historically sent once
+`dangerouslyAllowBrowser: true` is set, which matters here because the
+extension calls the API with raw `fetch` rather than `@anthropic-ai/sdk` (see
+the comment at the top of that file for why).
+
+Two live docs pages were checked while building this (`api/overview.md`'s
+full request-header table, and the TypeScript SDK page) and neither mentioned
+this header by name - the SDK page only documents the client-side
+`dangerouslyAllowBrowser` constructor option, which is a guard the SDK
+enforces on itself, not necessarily a header the API server requires. It's
+entirely possible the header either isn't needed, is named differently now,
+or is covered automatically for extension-origin requests in a way a plain
+webpage's fetch wouldn't be (chrome-extension:// origins with the host
+already in `host_permissions` don't go through normal page-level CORS the
+way a public website's fetch does). Keeping the header is low-risk either
+way: an unrecognised header should just be ignored rather than cause a
+failure.
+
+**To verify once an API key is in use:** if generation requests fail with
+something that looks like an origin/CORS-shaped rejection rather than one of
+the documented error codes (401/429/5xx/etc.), that's the first thing to
+check - try the same request with the header removed, or search current
+Anthropic docs for its exact current name directly rather than inferring it.
+
 ## Browser automation on youtube.com doesn't reach real playback
 
 Headless/automated Chrome tabs driven via `claude-in-chrome` got stuck in
