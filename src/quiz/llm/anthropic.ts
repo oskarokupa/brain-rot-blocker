@@ -118,7 +118,18 @@ export async function callStructured<T>(options: CallOptions): Promise<T> {
 
   if (!response.ok) {
     const kind = classifyStatus(response.status);
-    throw new AnthropicError(kind, `HTTP ${response.status}`);
+    // The body carries the actual reason (invalid key, missing workspace id
+    // on a multi-workspace key, a malformed field) and is the difference
+    // between "something is wrong" and knowing what to fix. Best effort:
+    // reading it can itself fail, and that must not hide the original error.
+    let detail = '';
+    try {
+      const body = (await response.json()) as { error?: { type?: string; message?: string } };
+      if (body?.error) detail = ` - ${body.error.type ?? ''}: ${body.error.message ?? ''}`;
+    } catch {
+      // No usable body. The status and kind are still reported below.
+    }
+    throw new AnthropicError(kind, `HTTP ${response.status}${detail}`);
   }
 
   let body: unknown;

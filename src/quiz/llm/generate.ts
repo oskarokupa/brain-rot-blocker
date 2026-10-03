@@ -172,7 +172,10 @@ async function generateValidated(
       // Network, auth, rate limit, timeout, malformed JSON: none of these are
       // worth retrying with a corrective prompt, since the problem was never
       // the content. Only a validation failure gets the retry.
-      console.warn('[brb] generation request failed:', err instanceof AnthropicError ? err.kind : err);
+      console.warn(
+        '[brb] generation request failed:',
+        err instanceof AnthropicError ? `${err.kind} (${err.message})` : err,
+      );
       return null;
     }
 

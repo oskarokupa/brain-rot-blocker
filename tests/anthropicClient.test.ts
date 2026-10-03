@@ -75,11 +75,38 @@ describe('callStructured: HTTP error classification', () => {
     [500, 'server', true],
     [529, 'server', true],
   ] as const)('maps HTTP %i to kind %s (retryable: %s)', async (status, kind, retryable) => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(status, { error: 'x' })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(status, { error: { type: 'some_error', message: 'x' } })),
+    );
     await expect(callStructured(baseOptions)).rejects.toMatchObject({
       name: 'AnthropicError',
       kind,
       retryable,
+    });
+  });
+
+  it('includes the response body\'s error type and message, not just the status', async () => {
+    // The actual case that prompted this: a 400 alone ("badRequest") gives no
+    // way to tell a rejected header apart from a multi-workspace key missing
+    // anthropic-workspace-id. The body is where that distinction lives.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse(400, { error: { type: 'invalid_request_error', message: 'workspace_id is required' } }),
+      ),
+    );
+    await expect(callStructured(baseOptions)).rejects.toMatchObject({
+      kind: 'badRequest',
+      message: expect.stringContaining('workspace_id is required'),
+    });
+  });
+
+  it('still reports status and kind when the error body cannot be read', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('not json', { status: 400 })));
+    await expect(callStructured(baseOptions)).rejects.toMatchObject({
+      kind: 'badRequest',
+      message: expect.stringContaining('HTTP 400'),
     });
   });
 });
