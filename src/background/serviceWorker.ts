@@ -13,9 +13,9 @@
 import { CONFIG } from '../config.js';
 import {
   attachLockListeners,
+  forceReturnToYoutubeKids,
   pausePlayback,
   presentQuiz,
-  releaseLock,
   sweepAllTabs,
 } from '../core/lock.js';
 import { dispatch, readState, resetState, setEffectRunner } from '../core/store.js';
@@ -30,6 +30,14 @@ import {
   verifyPin,
 } from '../parent/pin.js';
 import type { ProviderEvent } from '../providers/types.js';
+import type { AnswerResponse } from '../quiz/schema.js';
+import {
+  discardCurrentQuestion,
+  getActiveQuestion,
+  startMainQuiz,
+  startRemediationRound,
+  submitAnswer as submitQuizAnswer,
+} from '../quiz/quizStore.js';
 import { recordDiagnostic, type VideoDiagnostic } from './diagnostics.js';
 
 const TICK_ALARM = 'brb-tick';
@@ -47,8 +55,12 @@ setEffectRunner(async (effects: Effect[]) => {
         break;
 
       case 'releaseLock':
-        console.log('[brb] lock released');
-        await releaseLock();
+        console.log('[brb] lock released', effect.silent ? '(screen in progress)' : '(forced)');
+        // Silent releases trust whatever is already on screen — a success
+        // screen, or a parent panel that is about to navigate itself — to
+        // leave on its own. Everything else gets moved immediately, since
+        // nothing in those cases can be trusted to do it.
+        if (!effect.silent) await forceReturnToYoutubeKids();
         break;
 
       case 'pausePlayback':
@@ -56,21 +68,30 @@ setEffectRunner(async (effects: Effect[]) => {
         break;
 
       case 'presentQuiz':
+        await presentQuiz();
+        break;
+
       case 'presentRemediation':
+        // The round's questions have to exist before the tab opens, since the
+        // UI asks for them the moment it loads.
+        await startRemediationRound(effect.round);
         await presentQuiz();
         break;
 
       case 'startGeneration':
-        // Phase 5 fills this in. Until then the challenge surface shows a
-        // placeholder, which is enough to exercise every lock transition.
-        console.log('[brb] generation requested for', effect.videoId, `(${effect.reason})`);
+        // The LLM path (transcript and metadata derived questions) is phase 4.
+        // Until then every quiz comes from the local fallback bank, which is
+        // also exactly what a genuine LLM or network failure degrades to, so
+        // this is not a placeholder so much as one end of the real fallback.
+        await startMainQuiz(effect.videoId, durations.get(effect.videoId) ?? null);
         break;
 
       case 'reportFault':
-        // Fail open, loudly. This is the branch that stops a broken challenge
-        // screen from turning into a locked computer.
+        // Fail open, loudly, and immediately. This is the branch that stops a
+        // broken challenge screen from turning into a locked computer, so it
+        // cannot wait on that same screen to navigate itself anywhere.
         console.error('[brb] fault, unlocking:', effect.reason);
-        await releaseLock();
+        await forceReturnToYoutubeKids();
         break;
     }
   }
@@ -126,10 +147,9 @@ type Message =
   | { kind: 'providerEvent'; event: ProviderEvent }
   | { kind: 'quizReady' }
   | { kind: 'quizRenderFailed'; reason: string }
-  | { kind: 'quizPassed' }
-  | { kind: 'quizFailed' }
-  | { kind: 'remediationPassed' }
-  | { kind: 'remediationFailed' }
+  | { kind: 'quizGetQuestion' }
+  | { kind: 'quizSubmitAnswer'; response: AnswerResponse }
+  | { kind: 'quizDiscard' }
   | { kind: 'parentSkip' }
   | { kind: 'parentTimedUnlock' }
   | { kind: 'parentDisableUntilRestart' }
@@ -169,14 +189,15 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
       return reply(dispatch({ type: 'quizRendered' }));
     case 'quizRenderFailed':
       return reply(dispatch({ type: 'quizRenderFailed', reason: message.reason }));
-    case 'quizPassed':
-      return reply(dispatch({ type: 'quizPassed' }));
-    case 'quizFailed':
-      return reply(dispatch({ type: 'quizFailed' }));
-    case 'remediationPassed':
-      return reply(dispatch({ type: 'remediationPassed' }));
-    case 'remediationFailed':
-      return reply(dispatch({ type: 'remediationFailed' }));
+    case 'quizGetQuestion':
+      return reply(getActiveQuestion());
+    case 'quizSubmitAnswer':
+      // Grading, scoring and the pass/fail dispatch to the lock state machine
+      // all happen inside submitQuizAnswer. The UI only ever sees the result,
+      // never a chance to report its own pass or fail.
+      return reply(submitQuizAnswer(message.response));
+    case 'quizDiscard':
+      return reply(discardCurrentQuestion());
     case 'parentSkip':
       return reply(requireSession(() => dispatch({ type: 'parentSkip' })));
     case 'parentTimedUnlock':
@@ -202,10 +223,15 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
     case 'getState':
       return reply(readState(Date.now()));
     case 'clearLock':
-      // The recovery control. Behind the PIN once one is set, open before
-      // that. A parent who forgets the PIN can still remove and reinstall the
-      // extension, which clears storage and with it the lock.
-      return reply(requireSession(() => resetState().then(() => releaseLock())));
+      // The recovery control, used precisely when the challenge screen cannot
+      // be trusted. resetState bypasses the state machine's own effects
+      // entirely, so this calls the forced path directly rather than the
+      // generic releaseLock, which would otherwise do nothing here. Behind
+      // the PIN once one is set, open before that: a parent who forgets the
+      // PIN can still remove and reinstall the extension, which clears
+      // storage and with it the lock, so refusing this outright would not
+      // add real protection, only an extra step.
+      return reply(requireSession(() => resetState().then(() => forceReturnToYoutubeKids())));
     case 'clearDiagnostics':
       return reply(chrome.storage.local.remove('diagnostics.v1'));
     default:

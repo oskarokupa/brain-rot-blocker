@@ -34,7 +34,14 @@ export type CoreEvent =
 
 export type Effect =
   | { type: 'engageLock' }
-  | { type: 'releaseLock' }
+  /**
+   * `silent: true` means a result screen is already on its own way to showing
+   * her (or the parent panel driving this release is about to navigate
+   * itself), so the caller must not force the tab anywhere. `false` means
+   * nothing on screen can be trusted to leave on its own, and the caller
+   * should return the tab to YouTube Kids immediately.
+   */
+  | { type: 'releaseLock'; silent: boolean }
   | { type: 'pausePlayback' }
   /** Begin building a challenge for this video. */
   | { type: 'startGeneration'; videoId: string; reason: 'videoThreshold' | 'carryOver' }
@@ -122,8 +129,21 @@ export function reduce(state: PersistedState, event: CoreEvent, now: number): Tr
   // already locked, and the enforcer would never be asked to engage.
   const shouldLock = isLocked(next, now);
   if (shouldLock !== next.lockEngaged) {
-    if (shouldLock) effects.unshift({ type: 'engageLock' });
-    else effects.push({ type: 'releaseLock' });
+    if (shouldLock) {
+      effects.unshift({ type: 'engageLock' });
+    } else {
+      // A success screen is only in flight for a genuine pass, including the
+      // final remediation round clearing regardless of its own score. Every
+      // other release — a parent action, or a fault with no reliable UI to
+      // show anything — gets the tab moved immediately rather than trusting
+      // a page that may not be there, or may not be the one doing the asking.
+      const silent =
+        (event.type === 'quizPassed' ||
+          event.type === 'remediationPassed' ||
+          event.type === 'remediationFailed') &&
+        next.phase === 'idle';
+      effects.push({ type: 'releaseLock', silent });
+    }
     next = { ...next, lockEngaged: shouldLock };
   }
 

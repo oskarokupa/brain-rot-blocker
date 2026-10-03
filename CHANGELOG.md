@@ -2,6 +2,66 @@
 
 All notable changes to this project are logged here, most recent first.
 
+## 2026-10-03 - Phase 3: the real quiz engine
+
+Replaces the three hard-coded dummy questions with a working challenge: real
+question types, real grading, real scores, driving the real lock. No LLM yet;
+every quiz comes from a local Spanish fallback bank, which is also exactly
+what a genuine LLM or network failure degrades to in phase 4.
+
+- Question schema for single-select, typed, and multi-select
+  (`src/quiz/schema.ts`), and a structural validator (`validate.ts`) that
+  every quiz passes through regardless of source: right option counts, no
+  "all/none of the above", no answer-giveaway option-length imbalance, no
+  duplicate questions, exactly the 3/1/1 type mix on a five-question quiz.
+- Grading (`grade.ts`), pure and chrome-free like the state machine:
+  single and multi-select are exact; typed answers get a local ladder (exact
+  match, then keyword overlap) with a **negation guard** that stops "plants do
+  not need sunlight" from matching "plants need sunlight" on keyword overlap
+  alone. Never returns a confident wrong answer, only correct or uncertain.
+- Round engine (`engine.ts`): scoring against the per-length pass marks,
+  the discard ("this doesn't make sense") mechanic, and the swap to a typed
+  question's multiple-choice twin when local grading can't reach a verdict
+  and there is no LLM to ask.
+- Fallback bank (`fallback/bank.es.ts`, 36 questions, Spain Year 4 Spanish,
+  both subjects, all three types) and selection logic that respects a
+  no-repeat window and falls back to a repeat rather than coming up short.
+  **Written as typed TypeScript data, not bank.es.json as the plan named it**,
+  so a malformed entry is a compile error instead of a runtime surprise.
+  36 is seed content, not the SOP's 150-200 target; growing it is writing more
+  questions, not touching any selection or grading code.
+- Scoring moved server-side (`quizStore.ts`): the challenge page asks for a
+  question, submits an answer, and is told the result. It can no longer
+  report its own pass or fail, closing an escape route the phase 2 dummy left
+  open by trusting the page to call `quizPassed` on itself.
+- Real challenge UI: single-select, multi-select ("Select all that apply",
+  exact-match only), typed input with a brief checking state, the discard
+  button with remaining count, and separated per-question feedback from the
+  round-complete summary so remediation and a perfect score read differently.
+
+**Two real bugs, caught by writing the tests before trusting the code:**
+- The negation guard's `\bn't\b` pattern requires a word boundary immediately
+  before "n", which doesn't exist in "don't" (the "n" is glued to "o"), so it
+  silently never matched any contraction. Fixed to `n't\b`.
+- Three bank questions had option sets over the 3x length-ratio the validator
+  itself enforces, and would have been rejected by the code that is supposed
+  to catch exactly that in LLM output. Rephrased rather than loosening the
+  check.
+
+**One gap found by tracing the unlock paths, not by a test:** making
+`releaseLock()` do nothing (so a pass's success screen isn't cut off by an
+immediate redirect) broke the options page's "Unlock now" recovery control and
+every parent action, none of which would have moved the stuck tab anywhere.
+Fixed with a `silent` flag on the `releaseLock` effect: true only for a
+genuine pass (including the final remediation round, which clears regardless
+of its own score), false for everything else, which now forces the tab back
+to YouTube Kids immediately. Six new state machine tests pin this down.
+
+191 tests passing (up from 69).
+
+**Known gaps:** no LLM integration (phase 4), neutral styling rather than
+native YouTube Kids (phase 8), no XP or celebration polish yet (phase 8).
+
 ## 2026-10-01 - Phase 6: parent PIN
 
 Pulled ahead of the quiz engine, because the lock went live on the target

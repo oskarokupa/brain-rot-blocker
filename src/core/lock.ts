@@ -149,11 +149,18 @@ export async function presentQuiz(): Promise<void> {
   await sweepAllTabs();
 }
 
-/** Nothing to tear down. The listeners simply stop acting once unlocked. */
-export async function releaseLock(): Promise<void> {
+/**
+ * The forced recovery path. Used for every release except a genuine pass: a
+ * parent action, a fault, or a watchdog timeout. None of those can be trusted
+ * to have a working page ready to leave on its own, so this moves the tab
+ * immediately rather than waiting on one. A pass is the one exception,
+ * because the challenge's own success screen is already on its way and this
+ * would otherwise cut it off before she sees it; see the `silent` flag on the
+ * `releaseLock` effect in core/stateMachine.ts.
+ */
+export async function forceReturnToYoutubeKids(): Promise<void> {
   const url = quizUrl();
   const quizTabs = await chrome.tabs.query({ url: `${url}*` });
-  // Send the quiz tabs back to YouTube Kids rather than leaving dead ends.
   await Promise.all(
     quizTabs.map((tab) =>
       tab.id === undefined

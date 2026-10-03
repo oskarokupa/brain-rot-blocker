@@ -87,6 +87,59 @@ body {
 
 .option:hover { border-color: var(--accent); }
 .option:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.option.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.hint {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.typed-wrap { display: flex; flex-direction: column; gap: 12px; }
+
+.typed-input {
+  font: inherit;
+  font-size: 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+}
+.typed-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.primary-button {
+  font: inherit;
+  font-weight: 600;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.primary-button:hover { opacity: 0.92; }
+
+.discard-button {
+  margin-top: 20px;
+  font: inherit;
+  font-size: 13px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.feedback-correct { color: #1a7f37; }
+.feedback-incorrect { color: inherit; }
+
+.checking { font-style: italic; }
 
 .note,
 .loading {

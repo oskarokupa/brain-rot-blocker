@@ -362,3 +362,75 @@ describe('parent override', () => {
     expect(isLocked(state, T0 + 86_400_000)).toBe(false);
   });
 });
+
+/**
+ * Whether a release is "silent" decides whether the background worker yanks
+ * the tab away immediately or trusts something already on screen to leave on
+ * its own. Getting this backwards either cuts off her success screen before
+ * she sees it, or leaves a parent action sitting on the challenge page forever.
+ */
+describe('releaseLock silence', () => {
+  function releaseEffect(effects: Effect[]): Extract<Effect, { type: 'releaseLock' }> | undefined {
+    return effects.find((e): e is Extract<Effect, { type: 'releaseLock' }> => e.type === 'releaseLock');
+  }
+
+  it('is silent on a genuine pass, so the success screen is not cut off', () => {
+    const locked = run(initialState(T0), [
+      ...play('v1', 16),
+      [provider({ type: 'videoEnded', videoId: 'v1' })],
+    ]).state;
+    const { effects } = run(locked, [[{ type: 'quizPassed' }]]);
+    expect(releaseEffect(effects)?.silent).toBe(true);
+  });
+
+  it('is silent when remediation is passed', () => {
+    const locked = run(initialState(T0), [
+      ...play('v1', 16),
+      [provider({ type: 'videoEnded', videoId: 'v1' })],
+      [{ type: 'quizFailed' }],
+    ]).state;
+    const { effects } = run(locked, [[{ type: 'remediationPassed' }]]);
+    expect(releaseEffect(effects)?.silent).toBe(true);
+  });
+
+  it('is silent when the final remediation round clears regardless of its own score', () => {
+    let state = run(initialState(T0), [
+      ...play('v1', 16),
+      [provider({ type: 'videoEnded', videoId: 'v1' })],
+      [{ type: 'quizFailed' }],
+    ]).state;
+    state = reduce(state, { type: 'remediationFailed' }, T0).state;
+    state = reduce(state, { type: 'remediationFailed' }, T0).state;
+    // Third failure: the state machine clears unconditionally, and the UI
+    // frames this as cleared too, so the release must not be forced.
+    const { effects } = reduce(state, { type: 'remediationFailed' }, T0);
+    expect(releaseEffect(effects)?.silent).toBe(true);
+  });
+
+  it('is not silent on a parent skip, which has no success screen to protect', () => {
+    const locked = run(initialState(T0), [
+      ...play('v1', 16),
+      [provider({ type: 'videoEnded', videoId: 'v1' })],
+    ]).state;
+    const { effects } = run(locked, [[{ type: 'parentSkip' }]]);
+    expect(releaseEffect(effects)?.silent).toBe(false);
+  });
+
+  it('is not silent on a timed unlock', () => {
+    const locked = run(initialState(T0), [
+      ...play('v1', 16),
+      [provider({ type: 'videoEnded', videoId: 'v1' })],
+    ]).state;
+    const { effects } = run(locked, [[{ type: 'parentTimedUnlock' }]]);
+    expect(releaseEffect(effects)?.silent).toBe(false);
+  });
+
+  it('is not silent on a render fault, which has no reliable screen at all', () => {
+    const locked = run(initialState(T0), [
+      ...play('v1', 16),
+      [provider({ type: 'videoEnded', videoId: 'v1' })],
+    ]).state;
+    const { effects } = run(locked, [[{ type: 'quizRenderFailed', reason: 'boom' }]]);
+    expect(releaseEffect(effects)?.silent).toBe(false);
+  });
+});
