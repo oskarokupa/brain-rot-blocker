@@ -112,3 +112,4 @@ On approval, copy this plan to `specs/plans/001-2026-11-15-grow-question-bank.md
 - 2026-11-15: Each batch is drafted as typed data in `content/review/batch-NN-<subject>.ts`, and `content/tools/review-sheet.ts` validates it and generates the markdown review sheet (run with `npx tsx`, no dependency added). This replaces writing the sheet by hand, so the sheet and the data cannot drift apart.
 - 2026-11-15: The `noRepeatWindow` change (40 to 120) and the distribution tests (total, per-subject minimum, type share, answer position) land with the last batch, not the first. With a window larger than the bank, every question counts as recent and selection degrades to random.
 - 2026-11-15: `content/sources/` is git-ignored as a whole folder.
+- 2026-11-15: The two maths batches are split by cycle instead of by size: batch 03 is Cicle Mitjà (35 questions, difficulty 1 and 2), batch 04 is Cicle Superior (22 questions, difficulty 3). Both were drafted together.
