@@ -112,8 +112,12 @@ export const CONFIG = {
   /** Fallback question bank. */
   fallback: {
     language: 'es' as const,
-    /** Questions that must pass before one may repeat. */
-    noRepeatWindow: 40,
+    /**
+     * Questions that must pass before one may repeat. Sized against the
+     * 200-question bank: 24 five-question quizzes in a row without a repeat,
+     * with 80 questions still unseen to choose from.
+     */
+    noRepeatWindow: 120,
   },
 } as const;
 

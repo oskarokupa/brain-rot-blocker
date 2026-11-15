@@ -2,9 +2,9 @@
  * Picks questions out of the fallback bank.
  *
  * Three constraints, in order of importance: respect the type mix a length
- * requires, avoid anything asked recently, and otherwise randomize. The bank
- * is small enough right now that "avoid recent" will sometimes have to be
- * relaxed rather than come up empty-handed; see pickType below.
+ * requires, avoid anything asked recently, and otherwise randomize. When one
+ * type runs out of fresh questions, "avoid recent" is relaxed rather than
+ * coming up empty-handed; see pickType below.
  */
 
 import { CONFIG } from '../config.js';
@@ -30,7 +30,10 @@ function shuffled<T>(items: T[]): T[] {
  * Picks `count` questions of `type`, excluding ids already taken this quiz.
  * Prefers ones not recently asked, but falls back to recently-asked ones
  * rather than returning fewer than asked: a repeat is better than a quiz that
- * cannot be built, and the bank is small enough that this will happen.
+ * cannot be built. Recently-asked ones come back oldest first, so when a type
+ * is exhausted (short quizzes only draw on one or two types, and fill the
+ * window with them) the repeat is the question she saw longest ago, not one
+ * from the previous quiz.
  */
 function pickType(
   type: QuestionType,
@@ -40,7 +43,9 @@ function pickType(
 ): Question[] {
   const candidates = FALLBACK_BANK_ES.filter((q) => q.type === type && !excludeIds.has(q.id));
   const fresh = shuffled(candidates.filter((q) => !wasRecentlyUsed(recent, q.id)));
-  const stale = shuffled(candidates.filter((q) => wasRecentlyUsed(recent, q.id)));
+  const stale = candidates
+    .filter((q) => wasRecentlyUsed(recent, q.id))
+    .sort((a, b) => recent.indexOf(a.id) - recent.indexOf(b.id));
   return [...fresh, ...stale].slice(0, count);
 }
 

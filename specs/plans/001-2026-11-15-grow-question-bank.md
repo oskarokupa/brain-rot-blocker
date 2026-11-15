@@ -113,3 +113,5 @@ On approval, copy this plan to `specs/plans/001-2026-11-15-grow-question-bank.md
 - 2026-11-15: The `noRepeatWindow` change (40 to 120) and the distribution tests (total, per-subject minimum, type share, answer position) land with the last batch, not the first. With a window larger than the bank, every question counts as recent and selection degrades to random.
 - 2026-11-15: `content/sources/` is git-ignored as a whole folder.
 - 2026-11-15: The two maths batches are split by cycle instead of by size: batch 03 is Cicle Mitjà (35 questions, difficulty 1 and 2), batch 04 is Cicle Superior (22 questions, difficulty 3). Both were drafted together.
+- 2026-11-15: The two lengua batches follow the same split by cycle: batch 05 is Cicle Mitjà (27 questions), batch 06 is Cicle Superior (20 questions).
+- 2026-11-15: `src/fallback/select.ts` did change after all. The 200-quiz simulation showed that when every question of one type is inside the window, the repeat was random and could return two quizzes later. `pickType` now repeats the question seen longest ago. All six batches are approved and in the bank, which stands at exactly 200.

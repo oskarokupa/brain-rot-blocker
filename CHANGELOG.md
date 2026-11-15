@@ -2,6 +2,48 @@
 
 All notable changes to this project are logged here, most recent first.
 
+## 2026-11-15 - Offline question bank grown from 36 to 200 (not yet tested live)
+
+The fallback bank is what she gets when a video has no transcript or the model
+is unreachable. With 36 questions and a no-repeat window of 40, repeats showed
+up almost at once.
+
+- 200 Spanish questions: 75 matemáticas, 65 lengua castellana, 60 conocimiento
+  del medio (a new subject). 120 single-select, 40 multi-select, 40 typed, the
+  same 3/1/1 shape as a five-question quiz.
+- Level now runs from 4t to 6è. Difficulty 1 and 2 are 4t, difficulty 3 is 5è
+  and 6è. Remediation still draws from difficulty 2 and below.
+- The syllabus is the Catalan curriculum (Decret 175/2022), with the released
+  4t and 6è exams as the reference for level and wording. `content/SOURCES.md`
+  lists every file, `content/curriculum-map.md` maps each group of sabers to a
+  target count.
+- No vector database and no runtime retrieval. The corpus is three curriculum
+  PDFs and a few exam booklets, and the bank ships as static data that must work
+  offline, so the pipeline is authoring-time only: sources, curriculum map,
+  draft batch, review sheet, bank.
+- Every question was drafted in `content/review/` and approved by the parent in
+  six batches before landing. `content/tools/review-sheet.ts` validates a batch
+  and writes its sheet, `content/tools/promote.mjs` appends an approved batch.
+- The bank is split into one file per subject under `src/fallback/bank/`.
+  `bank.es.ts` concatenates them, so imports are unchanged. The 36 original ids
+  are untouched, since they live in her stored history.
+- `fallback.noRepeatWindow` goes from 40 to 120.
+- Fix found while simulating: when every question of a type was inside the
+  window, the repeat was picked at random and could come back two quizzes
+  later. `pickType` now repeats the one seen longest ago.
+- New bank tests: total and per-subject minimums, every type and difficulty in
+  each subject, type share, no favoured answer position (the seed bank leaned on
+  "b"), typed fallbacks matching their parent. 418 tests passing.
+
+**Measured over 200 simulated quizzes:** a five-question quiz goes 25 quizzes
+before any question returns, a three-question quiz 40, a one-question quiz 120.
+
+**Known gaps:** the local typed-answer grader drops one-character tokens, so
+"10.000" can pass as "1.000" and "0,36" as "36". New typed questions were
+written around it and checked against their own distractors. The 36 seed
+questions were never run through that check, and the grader itself is
+unchanged.
+
 ## 2026-10-07 - Phase 8: child-facing UI and rewards (not yet tested live)
 
 The challenge now looks like a screen YouTube Kids itself would show, speaks

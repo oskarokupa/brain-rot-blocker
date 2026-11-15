@@ -29,6 +29,45 @@ describe('every bank entry is individually valid', () => {
     expect(types).toEqual(new Set(['singleSelect', 'multiSelect', 'typed']));
   });
 
+  it('holds at least 200 questions, with no subject left thin', () => {
+    expect(FALLBACK_BANK_ES.length).toBeGreaterThanOrEqual(200);
+    for (const subject of ['matematicas', 'lengua', 'medio']) {
+      const count = FALLBACK_BANK_ES.filter((q) => q.meta?.subject === subject).length;
+      expect(count, subject).toBeGreaterThanOrEqual(55);
+    }
+  });
+
+  it('has every question type and every difficulty in each subject', () => {
+    for (const subject of ['matematicas', 'lengua', 'medio']) {
+      const inSubject = FALLBACK_BANK_ES.filter((q) => q.meta?.subject === subject);
+      expect(new Set(inSubject.map((q) => q.type)).size, subject).toBe(3);
+      expect(new Set(inSubject.map((q) => q.meta?.difficulty)), subject).toEqual(new Set([1, 2, 3]));
+    }
+  });
+
+  it('keeps the type share close to the 3/1/1 shape of a five-question quiz', () => {
+    const share = (type: string) => FALLBACK_BANK_ES.filter((q) => q.type === type).length / FALLBACK_BANK_ES.length;
+    expect(share('singleSelect')).toBeGreaterThanOrEqual(0.55);
+    expect(share('typed')).toBeGreaterThanOrEqual(0.15);
+    expect(share('multiSelect')).toBeGreaterThanOrEqual(0.15);
+  });
+
+  it('does not favour one answer position in single-select questions', () => {
+    // A bank that leans on "b" teaches her to guess "b".
+    const positions = [0, 0, 0, 0];
+    let total = 0;
+    for (const q of FALLBACK_BANK_ES) {
+      if (q.type !== 'singleSelect') continue;
+      positions[q.correctIndex] = (positions[q.correctIndex] ?? 0) + 1;
+      total++;
+    }
+    expect(Math.max(...positions) / total).toBeLessThanOrEqual(0.4);
+  });
+
+  it('leaves room to pick fresh questions once the no-repeat window is full', () => {
+    expect(CONFIG.fallback.noRepeatWindow).toBeLessThan(FALLBACK_BANK_ES.length);
+  });
+
   it('gives every typed question a fallback with the same subject and difficulty', () => {
     for (const q of FALLBACK_BANK_ES) {
       if (q.type !== 'typed') continue;
@@ -77,16 +116,25 @@ describe('selectFallbackQuiz', () => {
     const singleSelectIds = FALLBACK_BANK_ES.filter((q) => q.type === 'singleSelect').map((q) => q.id);
     const keepFree = singleSelectIds[0];
     let recent: string[] = [];
-    for (const id of singleSelectIds) if (id !== keepFree) recent = recordUsed(recent, id, 100);
+    for (const id of singleSelectIds) if (id !== keepFree) recent = recordUsed(recent, id, singleSelectIds.length);
 
     const { questions } = selectFallbackQuiz(1, recent);
     expect(questions[0]?.id).toBe(keepFree);
   });
 
+  it('repeats the question seen longest ago when every candidate is recent', () => {
+    const singleSelectIds = FALLBACK_BANK_ES.filter((q) => q.type === 'singleSelect').map((q) => q.id);
+    let recent: string[] = [];
+    for (const id of singleSelectIds) recent = recordUsed(recent, id, singleSelectIds.length);
+
+    const { questions } = selectFallbackQuiz(1, recent);
+    expect(questions[0]?.id).toBe(singleSelectIds[0]);
+  });
+
   it('still returns a full quiz even when every candidate has been seen recently', () => {
     const allIds = FALLBACK_BANK_ES.map((q) => q.id);
     let recent: string[] = [];
-    for (const id of allIds) recent = recordUsed(recent, id, 200);
+    for (const id of allIds) recent = recordUsed(recent, id, allIds.length);
     const { questions } = selectFallbackQuiz(5, recent);
     expect(questions).toHaveLength(5);
   });
