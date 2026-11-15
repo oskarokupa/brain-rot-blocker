@@ -88,7 +88,7 @@ For medi, the decree names the topic and not the facts (it says "organización t
 | Batch | Subject | Rows | Questions | Status |
 |---|---|---|---|---|
 | 01 | Medio (ciencia y tecnología) | M1 to M7, S1 to S3 | 30 | Approved 2026-11-15, in the bank |
-| 02 | Medio (sociedad, territorio, historia) | M8 to M13, S2, S4 to S7 | 30 | Not started |
+| 02 | Medio (sociedad, territorio, historia) | M8 to M13, S2, S4 to S7 | 30 | Approved 2026-11-15, in the bank |
 | 03 | Matemáticas, Cicle Mitjà | N1 to N5, ME1 | 29 | Not started |
 | 04 | Matemáticas, Mitjà y Superior | E1, A1, D1, N6 to N9, E2, D2, A2 | 28 | Not started |
 | 05 | Lengua, Cicle Mitjà | L1 to L7 | 24 | Not started |

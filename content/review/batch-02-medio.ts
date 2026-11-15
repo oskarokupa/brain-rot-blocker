@@ -1,0 +1,313 @@
+/**
+ * Batch 02, conocimiento del medio (society, territory and history).
+ *
+ * A draft: nothing here ships. Approved entries are moved into
+ * src/fallback/bank/medio.es.ts. Run `npx tsx content/tools/review-sheet.ts 02-medio`
+ * to validate the batch and regenerate batch-02-medio.md.
+ */
+
+import type { Question } from '../../src/quiz/schema.js';
+import type { BatchRef } from './batch-01-medio.js';
+
+const SCHOOL = 'Contenido escolar estándar';
+const GEO = 'Geografía de Cataluña y España (dato de dominio público)';
+const HISTORY = 'Historia general (dato de dominio público)';
+
+export const QUESTIONS: Question[] = [
+  // ---- Single-select ----
+  {
+    id: 'med-ss-19', type: 'singleSelect',
+    prompt: '¿Qué movimiento de la Tierra da lugar al día y a la noche?',
+    options: ['La traslación', 'La inclinación', 'La órbita lunar', 'La rotación'], correctIndex: 3,
+    explanation: 'La Tierra gira sobre sí misma (rotación) una vez cada 24 horas. La parte que mira al Sol tiene día y la otra, noche.',
+    meta: { subject: 'medio', topic: 'universo', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-20', type: 'singleSelect',
+    prompt: '¿Cuánto tarda la Tierra en dar una vuelta completa alrededor del Sol?',
+    options: ['Un día', 'Un mes', 'Un año', 'Una semana'], correctIndex: 2,
+    explanation: 'La Tierra tarda un año (unos 365 días) en dar la vuelta al Sol. Ese movimiento se llama traslación.',
+    meta: { subject: 'medio', topic: 'universo', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-21', type: 'singleSelect',
+    prompt: 'Si miras hacia donde sale el Sol por la mañana, ¿hacia qué punto cardinal miras?',
+    options: ['El este', 'El oeste', 'El norte', 'El sur'], correctIndex: 0,
+    explanation: 'El Sol sale por el este y se pone por el oeste.',
+    meta: { subject: 'medio', topic: 'territorio', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-22', type: 'singleSelect',
+    prompt: 'En un mapa, ¿para qué sirve la leyenda?',
+    options: ['Para indicar el norte', 'Para explicar los símbolos', 'Para medir distancias', 'Para poner el título'], correctIndex: 1,
+    explanation: 'La leyenda explica qué significa cada símbolo y cada color del mapa. Las distancias se calculan con la escala.',
+    meta: { subject: 'medio', topic: 'territorio', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-23', type: 'singleSelect',
+    prompt: '¿Cuál es la capital de Cataluña?',
+    options: ['Girona', 'Tarragona', 'Lleida', 'Barcelona'], correctIndex: 3,
+    explanation: 'Barcelona es la capital de Cataluña. Allí están el Parlamento y el Gobierno de la Generalitat.',
+    meta: { subject: 'medio', topic: 'territorio', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-24', type: 'singleSelect',
+    prompt: '¿En cuántas comunidades autónomas se divide España?',
+    options: ['15', '17', '19', '21'], correctIndex: 1,
+    explanation: 'España tiene 17 comunidades autónomas, además de dos ciudades autónomas: Ceuta y Melilla.',
+    meta: { subject: 'medio', topic: 'territorio', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-25', type: 'singleSelect',
+    prompt: '¿Qué gran descubrimiento permitió a las personas de la prehistoria calentarse y cocinar?',
+    options: ['La rueda', 'La escritura', 'El fuego', 'El hierro'], correctIndex: 2,
+    explanation: 'Con el fuego, las personas de la prehistoria pudieron calentarse, cocinar los alimentos y alejar a los animales.',
+    meta: { subject: 'medio', topic: 'historia', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-26', type: 'singleSelect',
+    prompt: '¿Qué invento marca el final de la prehistoria y el comienzo de la historia?',
+    options: ['La escritura', 'La rueda', 'La agricultura', 'La imprenta'], correctIndex: 0,
+    explanation: 'La historia empieza con la escritura, porque desde entonces las personas dejaron por escrito lo que pasaba.',
+    meta: { subject: 'medio', topic: 'historia', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-27', type: 'singleSelect',
+    prompt: '¿Qué nombre daban los romanos a la actual ciudad de Tarragona?',
+    options: ['Emerita', 'Hispalis', 'Corduba', 'Tarraco'], correctIndex: 3,
+    explanation: 'Tarraco fue una de las ciudades romanas más importantes de la península. Emerita es Mérida, Hispalis es Sevilla y Corduba es Córdoba.',
+    meta: { subject: 'medio', topic: 'historia', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-28', type: 'singleSelect',
+    prompt: 'Vas a cruzar la calle y el semáforo de peatones está en rojo. ¿Qué haces?',
+    options: ['Espero a que se ponga verde', 'Cruzo corriendo', 'Cruzo si no vienen coches', 'Cruzo entre los coches'], correctIndex: 0,
+    explanation: 'Con el semáforo en rojo se espera, aunque parezca que no viene nadie. Un coche puede aparecer muy rápido.',
+    meta: { subject: 'medio', topic: 'civismo', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-29', type: 'singleSelect',
+    prompt: '¿Qué institución gobierna un municipio?',
+    options: ['El parlamento', 'El tribunal', 'El ayuntamiento', 'El colegio'], correctIndex: 2,
+    explanation: 'El ayuntamiento, con el alcalde o la alcaldesa al frente, gobierna el pueblo o la ciudad.',
+    meta: { subject: 'medio', topic: 'civismo', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-30', type: 'singleSelect',
+    prompt: '¿A qué contenedor van las pieles de fruta y los restos de comida?',
+    options: ['Al amarillo', 'Al marrón', 'Al azul', 'Al verde'], correctIndex: 1,
+    explanation: 'Los restos orgánicos van al contenedor marrón. Con ellos se fabrica compost, un abono natural.',
+    meta: { subject: 'medio', topic: 'medio_ambiente', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-31', type: 'singleSelect',
+    prompt: '¿Qué células de la sangre transportan el oxígeno?',
+    options: ['Los glóbulos rojos', 'Los glóbulos blancos', 'Las plaquetas', 'Las neuronas'], correctIndex: 0,
+    explanation: 'Los glóbulos rojos llevan el oxígeno. Los glóbulos blancos nos defienden de las infecciones y las plaquetas cierran las heridas.',
+    meta: { subject: 'medio', topic: 'cuerpo_humano', difficulty: 3 },
+  },
+  {
+    id: 'med-ss-32', type: 'singleSelect',
+    prompt: '¿Cuál de estas fuentes de energía es renovable?',
+    options: ['El carbón', 'El petróleo', 'El gas natural', 'El viento'], correctIndex: 3,
+    explanation: 'El viento no se agota, por eso es una fuente renovable. El carbón, el petróleo y el gas natural se acaban y contaminan más.',
+    meta: { subject: 'medio', topic: 'energia', difficulty: 3 },
+  },
+  {
+    id: 'med-ss-33', type: 'singleSelect',
+    prompt: '¿Qué clima tiene la costa catalana, con veranos secos y calurosos e inviernos suaves?',
+    options: ['Oceánico', 'Mediterráneo', 'Polar', 'Desértico'], correctIndex: 1,
+    explanation: 'El clima mediterráneo tiene veranos secos y calurosos, inviernos suaves y lluvias sobre todo en otoño y primavera.',
+    meta: { subject: 'medio', topic: 'territorio', difficulty: 3 },
+  },
+  {
+    id: 'med-ss-34', type: 'singleSelect',
+    prompt: '¿Qué cordillera separa la península ibérica de Francia?',
+    options: ['Los Alpes', 'Sierra Nevada', 'Los Pirineos', 'Los Picos de Europa'], correctIndex: 2,
+    explanation: 'Los Pirineos van del mar Cantábrico al Mediterráneo y hacen de frontera natural con Francia.',
+    meta: { subject: 'medio', topic: 'territorio', difficulty: 3 },
+  },
+  {
+    id: 'med-ss-35', type: 'singleSelect',
+    prompt: '¿En qué año se aprobó la Constitución española actual?',
+    options: ['1936', '1975', '1978', '1992'], correctIndex: 2,
+    explanation: 'La Constitución se aprobó en 1978 y con ella España pasó a ser una democracia.',
+    meta: { subject: 'medio', topic: 'historia', difficulty: 3 },
+  },
+  {
+    id: 'med-ss-36', type: 'singleSelect',
+    prompt: '¿Qué acontecimiento de 1492 marca el inicio de la Edad Moderna?',
+    options: ['La llegada de Colón a América', 'La caída del Imperio romano', 'La Revolución francesa', 'La invención de la escritura'], correctIndex: 0,
+    explanation: 'La llegada de Colón a América en 1492 se usa para marcar el final de la Edad Media y el inicio de la Edad Moderna.',
+    meta: { subject: 'medio', topic: 'historia', difficulty: 3 },
+  },
+
+  // ---- Multi-select ----
+  {
+    id: 'med-ms-07', type: 'multiSelect',
+    prompt: '¿Cuáles de estos instrumentos sirven para medir el tiempo atmosférico?',
+    options: ['El termómetro', 'El pluviómetro', 'El microscopio', 'La veleta', 'El metrónomo'], correctIndices: [0, 1, 3],
+    explanation: 'El termómetro mide la temperatura, el pluviómetro la lluvia caída y la veleta señala la dirección del viento.',
+    meta: { subject: 'medio', topic: 'territorio', difficulty: 2 },
+  },
+  {
+    id: 'med-ms-08', type: 'multiSelect',
+    prompt: '¿Cuáles de estas son provincias de Cataluña?',
+    options: ['Girona', 'Valencia', 'Lleida', 'Zaragoza', 'Tarragona'], correctIndices: [0, 2, 4],
+    explanation: 'Cataluña tiene cuatro provincias: Barcelona, Girona, Lleida y Tarragona.',
+    meta: { subject: 'medio', topic: 'territorio', difficulty: 2 },
+  },
+  {
+    id: 'med-ms-09', type: 'multiSelect',
+    prompt: '¿Cuáles de estas son fuentes históricas escritas?',
+    options: ['Una vasija de barro', 'Una carta antigua', 'Un periódico de 1950', 'Una pintura rupestre', 'Un diario personal'], correctIndices: [1, 2, 4],
+    explanation: 'La carta, el periódico y el diario son textos. La vasija y la pintura rupestre también nos hablan del pasado, pero no están escritas.',
+    meta: { subject: 'medio', topic: 'historia', difficulty: 2 },
+  },
+  {
+    id: 'med-ms-10', type: 'multiSelect',
+    prompt: '¿Cuáles de estas acciones ayudan a frenar el cambio climático?',
+    options: ['Ir a pie o en bici', 'Dejar luces encendidas', 'Reciclar los envases', 'Usar el coche para todo', 'Comprar productos cercanos'], correctIndices: [0, 2, 4],
+    explanation: 'Moverse sin motor, reciclar y comprar productos de proximidad reduce la contaminación. Gastar luz y usar mucho el coche la aumenta.',
+    meta: { subject: 'medio', topic: 'medio_ambiente', difficulty: 2 },
+  },
+  {
+    id: 'med-ms-11', type: 'multiSelect',
+    prompt: '¿Cuáles de estos materiales dejan pasar la corriente eléctrica?',
+    options: ['El plástico', 'El cobre', 'El hierro', 'La goma', 'El aluminio'], correctIndices: [1, 2, 4],
+    explanation: 'Los metales, como el cobre, el hierro y el aluminio, son conductores. El plástico y la goma son aislantes, por eso recubren los cables.',
+    meta: { subject: 'medio', topic: 'energia', difficulty: 3 },
+  },
+  {
+    id: 'med-ms-12', type: 'multiSelect',
+    prompt: '¿Cuáles de estas construcciones son típicas de la Edad Media?',
+    options: ['Los castillos', 'Los rascacielos', 'Las catedrales góticas', 'Los monasterios', 'Las fábricas'], correctIndices: [0, 2, 3],
+    explanation: 'En la Edad Media se levantaron castillos, monasterios y catedrales. Las fábricas y los rascacielos llegaron muchos siglos después.',
+    meta: { subject: 'medio', topic: 'historia', difficulty: 3 },
+  },
+
+  // ---- Typed ----
+  {
+    id: 'med-ty-07', type: 'typed',
+    prompt: '¿Cómo se llama el satélite natural de la Tierra?',
+    expectedConcept: 'Luna', keywords: ['luna'],
+    exampleAnswers: ['La Luna', 'Luna', 'Se llama Luna'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-07-mc', type: 'singleSelect',
+      prompt: '¿Cómo se llama el satélite natural de la Tierra?',
+      options: ['El Sol', 'Marte', 'La Luna', 'Venus'], correctIndex: 2,
+      explanation: 'La Luna gira alrededor de la Tierra y tarda unos 28 días en dar una vuelta.',
+      meta: { subject: 'medio', topic: 'universo', difficulty: 1 },
+    },
+    explanation: 'La Luna gira alrededor de la Tierra y tarda unos 28 días en dar una vuelta.',
+    meta: { subject: 'medio', topic: 'universo', difficulty: 1 },
+  },
+  {
+    id: 'med-ty-08', type: 'typed',
+    prompt: 'Cataluña se divide en territorios que agrupan varios municipios, como el Maresme o el Segrià. ¿Cómo se llaman?',
+    expectedConcept: 'comarcas', keywords: ['comarcas'],
+    exampleAnswers: ['Comarcas', 'Las comarcas', 'Se llaman comarcas', 'Comarca'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-08-mc', type: 'singleSelect',
+      prompt: 'Cataluña se divide en territorios que agrupan varios municipios, como el Maresme o el Segrià. ¿Cómo se llaman?',
+      options: ['Provincias', 'Comarcas', 'Continentes', 'Barrios'], correctIndex: 1,
+      explanation: 'Una comarca agrupa varios municipios vecinos. El Maresme y el Segrià son dos de las comarcas de Cataluña.',
+      meta: { subject: 'medio', topic: 'territorio', difficulty: 2 },
+    },
+    explanation: 'Una comarca agrupa varios municipios vecinos. El Maresme y el Segrià son dos de las comarcas de Cataluña.',
+    meta: { subject: 'medio', topic: 'territorio', difficulty: 2 },
+  },
+  {
+    id: 'med-ty-09', type: 'typed',
+    prompt: 'En un circuito eléctrico sencillo, ¿qué elemento da la energía a la bombilla?',
+    expectedConcept: 'pila', keywords: ['pila'],
+    exampleAnswers: ['La pila', 'Pila', 'Una pila', 'Las pilas', 'Pilas', 'La batería', 'Batería'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-09-mc', type: 'singleSelect',
+      prompt: 'En un circuito eléctrico sencillo, ¿qué elemento da la energía a la bombilla?',
+      options: ['El interruptor', 'El cable', 'El portalámparas', 'La pila'], correctIndex: 3,
+      explanation: 'La pila da la energía, los cables la llevan y el interruptor abre o cierra el paso de la corriente.',
+      meta: { subject: 'medio', topic: 'energia', difficulty: 3 },
+    },
+    explanation: 'La pila da la energía, los cables la llevan y el interruptor abre o cierra el paso de la corriente.',
+    meta: { subject: 'medio', topic: 'energia', difficulty: 3 },
+  },
+  {
+    id: 'med-ty-10', type: 'typed',
+    prompt: '¿Qué río desemboca en el Mediterráneo formando un gran delta en el sur de Cataluña?',
+    expectedConcept: 'Ebro', keywords: ['ebro'],
+    exampleAnswers: ['El Ebro', 'Ebro', 'El río Ebro'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-10-mc', type: 'singleSelect',
+      prompt: '¿Qué río desemboca en el Mediterráneo formando un gran delta en el sur de Cataluña?',
+      options: ['El Ebro', 'El Ter', 'El Llobregat', 'El Segre'], correctIndex: 0,
+      explanation: 'El Ebro desemboca en la provincia de Tarragona, donde forma el delta del Ebro.',
+      meta: { subject: 'medio', topic: 'territorio', difficulty: 3 },
+    },
+    explanation: 'El Ebro desemboca en la provincia de Tarragona, donde forma el delta del Ebro.',
+    meta: { subject: 'medio', topic: 'territorio', difficulty: 3 },
+  },
+  {
+    id: 'med-ty-11', type: 'typed',
+    prompt: '¿Cómo se llama la moneda que comparten muchos países de la Unión Europea?',
+    expectedConcept: 'euro', keywords: ['euro'],
+    exampleAnswers: ['El euro', 'Euro', 'Euros', 'Se llama euro'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-11-mc', type: 'singleSelect',
+      prompt: '¿Cómo se llama la moneda que comparten muchos países de la Unión Europea?',
+      options: ['El dólar', 'La libra', 'El euro', 'La peseta'], correctIndex: 2,
+      explanation: 'El euro es la moneda común de muchos países de la Unión Europea, entre ellos España.',
+      meta: { subject: 'medio', topic: 'civismo', difficulty: 3 },
+    },
+    explanation: 'El euro es la moneda común de muchos países de la Unión Europea, entre ellos España.',
+    meta: { subject: 'medio', topic: 'civismo', difficulty: 3 },
+  },
+  {
+    id: 'med-ty-12', type: 'typed',
+    prompt: '¿A partir de qué edad se puede votar en las elecciones en España?',
+    expectedConcept: '18', keywords: ['18'],
+    exampleAnswers: ['18', '18 años', 'A los 18', 'Dieciocho', 'Dieciocho años', 'A los dieciocho años'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-12-mc', type: 'singleSelect',
+      prompt: '¿A partir de qué edad se puede votar en las elecciones en España?',
+      options: ['16 años', '18 años', '21 años', '25 años'], correctIndex: 1,
+      explanation: 'En España se puede votar a partir de los 18 años, que es la mayoría de edad.',
+      meta: { subject: 'medio', topic: 'civismo', difficulty: 3 },
+    },
+    explanation: 'En España se puede votar a partir de los 18 años, que es la mayoría de edad.',
+    meta: { subject: 'medio', topic: 'civismo', difficulty: 3 },
+  },
+];
+
+export const REFS: Record<string, BatchRef> = {
+  'med-ss-19': { row: 'M8', source: SCHOOL },
+  'med-ss-20': { row: 'M8', source: SCHOOL },
+  'med-ss-21': { row: 'M9', source: SCHOOL },
+  'med-ss-22': { row: 'M9', source: SCHOOL },
+  'med-ss-23': { row: 'M10', source: GEO },
+  'med-ss-24': { row: 'M10', source: 'Constitución española y estatutos de autonomía: 17 comunidades y 2 ciudades autónomas' },
+  'med-ss-25': { row: 'M11', source: HISTORY },
+  'med-ss-26': { row: 'M11', source: HISTORY },
+  'med-ss-27': { row: 'M11', source: 'Conjunto arqueológico de Tarraco (Patrimonio Mundial de la UNESCO)' },
+  'med-ss-28': { row: 'M12', source: 'Decret 175/2022, normas de circulación como peatón' },
+  'med-ss-29': { row: 'M12', source: SCHOOL },
+  'med-ss-30': { row: 'M13', source: 'Texto del cuaderno 2 de 4t 2026 (residuos orgánicos al contenedor marrón)' },
+  'med-ss-31': { row: 'S2', source: SCHOOL },
+  'med-ss-32': { row: 'S4', source: SCHOOL },
+  'med-ss-33': { row: 'S5', source: GEO },
+  'med-ss-34': { row: 'S5', source: GEO },
+  'med-ss-35': { row: 'S6', source: 'Decret 175/2022, Constitución de 1978' },
+  'med-ss-36': { row: 'S6', source: HISTORY },
+  'med-ms-07': { row: 'M9', source: SCHOOL },
+  'med-ms-08': { row: 'M10', source: GEO },
+  'med-ms-09': { row: 'M11', source: 'Decret 175/2022, fuentes históricas orales, escritas y patrimoniales' },
+  'med-ms-10': { row: 'M13', source: 'Estilo del ítem 13 del cuaderno 2 de 4t 2026 (acciones que ayudan, sí o no)' },
+  'med-ms-11': { row: 'S4', source: SCHOOL },
+  'med-ms-12': { row: 'S6', source: HISTORY },
+  'med-ty-07': { row: 'M8', source: SCHOOL },
+  'med-ty-08': { row: 'M10', source: GEO },
+  'med-ty-09': { row: 'S4', source: SCHOOL },
+  'med-ty-10': { row: 'S5', source: GEO },
+  'med-ty-11': { row: 'S7', source: SCHOOL },
+  'med-ty-12': { row: 'S7', source: 'Constitución española, artículo 12 (mayoría de edad a los 18 años)' },
+};
