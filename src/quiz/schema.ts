@@ -11,7 +11,7 @@ export type QuestionType = 'singleSelect' | 'typed' | 'multiSelect';
 
 interface QuestionMeta {
   /** Set on fallback-bank questions. Absent on video-derived ones. */
-  subject?: 'matematicas' | 'lengua';
+  subject?: 'matematicas' | 'lengua' | 'medio';
   topic?: string;
   /** 1 easiest, 3 hardest. Used to pick remediation questions down a level. */
   difficulty?: 1 | 2 | 3;

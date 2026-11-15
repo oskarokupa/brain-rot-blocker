@@ -22,11 +22,19 @@ describe('every bank entry is individually valid', () => {
     expect(new Set(prompts).size).toBe(prompts.length);
   });
 
-  it('covers both subjects and all three question types', () => {
+  it('covers every subject and all three question types', () => {
     const subjects = new Set(FALLBACK_BANK_ES.map((q) => q.meta?.subject));
     const types = new Set(FALLBACK_BANK_ES.map((q) => q.type));
-    expect(subjects).toEqual(new Set(['matematicas', 'lengua']));
+    expect(subjects).toEqual(new Set(['matematicas', 'lengua', 'medio']));
     expect(types).toEqual(new Set(['singleSelect', 'multiSelect', 'typed']));
+  });
+
+  it('gives every typed question a fallback with the same subject and difficulty', () => {
+    for (const q of FALLBACK_BANK_ES) {
+      if (q.type !== 'typed') continue;
+      expect(q.fallbackMultipleChoice.meta?.subject, q.id).toBe(q.meta?.subject);
+      expect(q.fallbackMultipleChoice.meta?.difficulty, q.id).toBe(q.meta?.difficulty);
+    }
   });
 
   it('has enough of each type to build a five-question quiz without emptying the bank', () => {

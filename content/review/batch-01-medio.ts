@@ -1,0 +1,317 @@
+/**
+ * Batch 01, conocimiento del medio (natural science and technology).
+ *
+ * A draft: nothing here ships. Approved entries are moved into
+ * src/fallback/bank/medio.es.ts. Run `npx tsx content/tools/review-sheet.ts 01-medio`
+ * to validate the batch and regenerate batch-01-medio.md.
+ */
+
+import type { Question } from '../../src/quiz/schema.js';
+
+export interface BatchRef {
+  /** Row id in content/curriculum-map.md. */
+  row: string;
+  /** Where the fact or the item style comes from. */
+  source: string;
+}
+
+const SCHOOL = 'Contenido escolar estándar';
+
+export const QUESTIONS: Question[] = [
+  // ---- Single-select ----
+  {
+    id: 'med-ss-01', type: 'singleSelect',
+    prompt: 'Quieres saber cuánta masa tiene una piedra. ¿Qué instrumento usas?',
+    options: ['Un termómetro', 'Una regla', 'Una balanza', 'Un cronómetro'], correctIndex: 2,
+    explanation: 'La balanza mide la masa. El termómetro mide la temperatura, la regla la longitud y el cronómetro el tiempo.',
+    meta: { subject: 'medio', topic: 'ciencia', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-02', type: 'singleSelect',
+    prompt: 'Dos plantas iguales reciben la misma agua, pero una está a oscuras y la otra al sol. ¿Qué se quiere comprobar con este experimento?',
+    options: ['Si la luz afecta al crecimiento', 'Si el agua afecta al crecimiento', 'Si la maceta cambia de color', 'Si la tierra pesa más al sol'], correctIndex: 0,
+    explanation: 'Lo único que cambia entre las dos plantas es la luz, así que el experimento comprueba el efecto de la luz.',
+    meta: { subject: 'medio', topic: 'ciencia', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-03', type: 'singleSelect',
+    prompt: 'En la cadena alimentaria hierba, conejo, zorro, ¿qué pasaría probablemente si desaparecieran los conejos?',
+    options: ['Habría más zorros', 'Habría menos zorros', 'Habría menos hierba', 'No cambiaría nada'], correctIndex: 1,
+    explanation: 'Los zorros se quedarían sin su alimento, así que habría menos. La hierba, en cambio, crecería más porque nadie se la comería.',
+    meta: { subject: 'medio', topic: 'ecosistemas', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-04', type: 'singleSelect',
+    prompt: '¿Cómo se llama un animal que solo come plantas?',
+    options: ['Carnívoro', 'Omnívoro', 'Descomponedor', 'Herbívoro'], correctIndex: 3,
+    explanation: 'Los herbívoros solo comen plantas. Los carnívoros comen otros animales y los omnívoros comen de todo.',
+    meta: { subject: 'medio', topic: 'ecosistemas', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-05', type: 'singleSelect',
+    prompt: '¿Cuál de estos animales es un mamífero?',
+    options: ['El tiburón', 'El delfín', 'El pingüino', 'La rana'], correctIndex: 1,
+    explanation: 'El delfín respira con pulmones y sus crías maman leche. El tiburón es un pez, el pingüino un ave y la rana un anfibio.',
+    meta: { subject: 'medio', topic: 'seres_vivos', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-06', type: 'singleSelect',
+    prompt: '¿Qué tienen en común todos los animales vertebrados?',
+    options: ['Tienen cuatro patas', 'Nacen de huevos', 'Tienen columna vertebral', 'Viven en tierra firme'], correctIndex: 2,
+    explanation: 'Todos los vertebrados tienen columna vertebral. Hay vertebrados sin patas (las serpientes), que nacen del vientre (los mamíferos) y que viven en el agua (los peces).',
+    meta: { subject: 'medio', topic: 'seres_vivos', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-07', type: 'singleSelect',
+    prompt: 'El cactus tiene espinas en lugar de hojas anchas. ¿Para qué le sirve en el desierto?',
+    options: ['Para perder menos agua', 'Para atraer a los insectos', 'Para crecer más deprisa', 'Para absorber más lluvia'], correctIndex: 0,
+    explanation: 'Por las hojas anchas se escapa mucha agua. Con espinas, el cactus pierde muy poca y aguanta la sequía.',
+    meta: { subject: 'medio', topic: 'seres_vivos', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-08', type: 'singleSelect',
+    prompt: '¿Qué órgano bombea la sangre por todo el cuerpo?',
+    options: ['El pulmón', 'El hígado', 'El estómago', 'El corazón'], correctIndex: 3,
+    explanation: 'El corazón es un músculo que empuja la sangre por todo el cuerpo sin parar.',
+    meta: { subject: 'medio', topic: 'cuerpo_humano', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-09', type: 'singleSelect',
+    prompt: '¿Cuál de estos desayunos es el más saludable?',
+    options: ['Bollos de chocolate y refresco', 'Fruta, pan integral y leche', 'Patatas fritas y zumo', 'Galletas y batido azucarado'], correctIndex: 1,
+    explanation: 'La fruta, el pan integral y la leche dan energía y nutrientes sin exceso de azúcar ni de grasa.',
+    meta: { subject: 'medio', topic: 'salud', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-10', type: 'singleSelect',
+    prompt: '¿Cuál de estos materiales conduce bien el calor?',
+    options: ['La madera', 'El corcho', 'El metal', 'La lana'], correctIndex: 2,
+    explanation: 'El metal es un buen conductor del calor. La madera, el corcho y la lana son aislantes.',
+    meta: { subject: 'medio', topic: 'materia', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-11', type: 'singleSelect',
+    prompt: 'Echas sal en un vaso de agua y remueves hasta que deja de verse. ¿Qué has formado?',
+    options: ['Una mezcla homogénea', 'Una mezcla heterogénea', 'Una sustancia pura', 'Un material sólido'], correctIndex: 0,
+    explanation: 'En una mezcla homogénea no se distinguen los componentes a simple vista, como pasa con la sal disuelta en el agua.',
+    meta: { subject: 'medio', topic: 'materia', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-12', type: 'singleSelect',
+    prompt: '¿Cómo separarías una mezcla de arena y agua?',
+    options: ['Con un imán', 'Con una lupa', 'Con un termómetro', 'Con un filtro'], correctIndex: 3,
+    explanation: 'El filtro deja pasar el agua y retiene los granos de arena.',
+    meta: { subject: 'medio', topic: 'materia', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-13', type: 'singleSelect',
+    prompt: 'Sueltas una pelota y cae al suelo. ¿Qué fuerza la hace caer?',
+    options: ['El magnetismo', 'La gravedad', 'El rozamiento', 'La electricidad'], correctIndex: 1,
+    explanation: 'La gravedad es la fuerza con la que la Tierra atrae a los objetos hacia el suelo.',
+    meta: { subject: 'medio', topic: 'materia', difficulty: 2 },
+  },
+  {
+    id: 'med-ss-14', type: 'singleSelect',
+    prompt: '¿Cuál de estas contraseñas es la más segura?',
+    options: ['12345678', 'tunombre', 'Tr3n!Azul#82', 'contraseña'], correctIndex: 2,
+    explanation: 'Una contraseña segura es larga y mezcla mayúsculas, minúsculas, números y símbolos.',
+    meta: { subject: 'medio', topic: 'tecnologia', difficulty: 1 },
+  },
+  {
+    id: 'med-ss-15', type: 'singleSelect',
+    prompt: 'En un ecosistema, ¿qué hacen los descomponedores, como los hongos y las bacterias?',
+    options: ['Fabrican alimento con la luz', 'Cazan a otros animales', 'Se comen solo las plantas', 'Transforman restos en nutrientes'], correctIndex: 3,
+    explanation: 'Los descomponedores transforman los restos de plantas y animales en nutrientes que vuelven al suelo.',
+    meta: { subject: 'medio', topic: 'ecosistemas', difficulty: 3 },
+  },
+  {
+    id: 'med-ss-16', type: 'singleSelect',
+    prompt: '¿Cuál de estos cambios es irreversible, es decir, no se puede deshacer?',
+    options: ['Quemar un papel', 'Derretir un helado', 'Congelar agua', 'Doblar una hoja'], correctIndex: 0,
+    explanation: 'El papel quemado se convierte en ceniza y humo, y ya no puede volver a ser papel. Los otros cambios se pueden deshacer.',
+    meta: { subject: 'medio', topic: 'materia', difficulty: 3 },
+  },
+  {
+    id: 'med-ss-17', type: 'singleSelect',
+    prompt: 'Una bola de plastilina se hunde en el agua, pero con forma de barca flota. ¿Por qué?',
+    options: ['Pesa menos que antes', 'El agua se vuelve más densa', 'Ocupa más volumen con la misma masa', 'La plastilina absorbe aire'], correctIndex: 2,
+    explanation: 'La masa es la misma, pero la barca ocupa más espacio (contando el hueco lleno de aire). Su densidad queda por debajo de la del agua, y por eso flota.',
+    meta: { subject: 'medio', topic: 'materia', difficulty: 3 },
+  },
+  {
+    id: 'med-ss-18', type: 'singleSelect',
+    prompt: '¿En qué órgano pasan a la sangre los nutrientes de los alimentos?',
+    options: ['El estómago', 'El intestino delgado', 'El esófago', 'El intestino grueso'], correctIndex: 1,
+    explanation: 'El estómago tritura y mezcla los alimentos, pero es en el intestino delgado donde los nutrientes pasan a la sangre.',
+    meta: { subject: 'medio', topic: 'cuerpo_humano', difficulty: 3 },
+  },
+
+  // ---- Multi-select ----
+  {
+    id: 'med-ms-01', type: 'multiSelect',
+    prompt: '¿Cuáles de estos son elementos sin vida de un bosque?',
+    options: ['El agua', 'Las setas', 'La luz del sol', 'Los pájaros', 'Las rocas'], correctIndices: [0, 2, 4],
+    explanation: 'El agua, la luz del sol y las rocas no tienen vida. Las setas y los pájaros son seres vivos.',
+    meta: { subject: 'medio', topic: 'ecosistemas', difficulty: 2 },
+  },
+  {
+    id: 'med-ms-02', type: 'multiSelect',
+    prompt: '¿Cuáles de estos animales son invertebrados?',
+    options: ['La mariposa', 'El caracol', 'La lagartija', 'El pulpo', 'El gorrión'], correctIndices: [0, 1, 3],
+    explanation: 'La mariposa, el caracol y el pulpo no tienen columna vertebral. La lagartija y el gorrión sí la tienen.',
+    meta: { subject: 'medio', topic: 'seres_vivos', difficulty: 2 },
+  },
+  {
+    id: 'med-ms-03', type: 'multiSelect',
+    prompt: '¿Cuáles de estas son funciones vitales de los seres vivos?',
+    options: ['Nutrición', 'Imaginación', 'Relación', 'Educación', 'Reproducción'], correctIndices: [0, 2, 4],
+    explanation: 'Todos los seres vivos se nutren, se relacionan con su entorno y se reproducen.',
+    meta: { subject: 'medio', topic: 'cuerpo_humano', difficulty: 2 },
+  },
+  {
+    id: 'med-ms-04', type: 'multiSelect',
+    prompt: '¿Cuáles de estas son máquinas simples?',
+    options: ['El ordenador', 'La palanca', 'La polea', 'El televisor', 'La rampa'], correctIndices: [1, 2, 4],
+    explanation: 'La palanca, la polea y la rampa son máquinas simples: ayudan a hacer menos fuerza y no necesitan motor.',
+    meta: { subject: 'medio', topic: 'materia', difficulty: 1 },
+  },
+  {
+    id: 'med-ms-05', type: 'multiSelect',
+    prompt: '¿Cuáles de estas acciones te protegen cuando navegas por internet?',
+    options: ['Aceptar a desconocidos', 'No compartir tu dirección', 'Abrir cualquier enlace', 'Usar contraseñas distintas', 'Preguntar a un adulto si dudas'], correctIndices: [1, 3, 4],
+    explanation: 'Guardar tus datos personales, usar contraseñas distintas y preguntar a un adulto te protege. Aceptar a desconocidos o abrir cualquier enlace te pone en riesgo.',
+    meta: { subject: 'medio', topic: 'tecnologia', difficulty: 2 },
+  },
+  {
+    id: 'med-ms-06', type: 'multiSelect',
+    prompt: '¿Cuáles de estos seres vivos son productores, es decir, fabrican su propio alimento?',
+    options: ['El roble', 'El conejo', 'Las algas', 'El buitre', 'La hierba'], correctIndices: [0, 2, 4],
+    explanation: 'El roble, las algas y la hierba fabrican su alimento con la luz del sol. El conejo y el buitre tienen que comer otros seres vivos.',
+    meta: { subject: 'medio', topic: 'ecosistemas', difficulty: 3 },
+  },
+
+  // ---- Typed ----
+  {
+    id: 'med-ty-01', type: 'typed',
+    prompt: '¿Cómo se llama el proceso por el que las plantas fabrican su alimento usando la luz del sol?',
+    expectedConcept: 'fotosíntesis', keywords: ['fotosintesis'],
+    exampleAnswers: ['Fotosíntesis', 'La fotosíntesis', 'Se llama fotosíntesis'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-01-mc', type: 'singleSelect',
+      prompt: '¿Cómo se llama el proceso por el que las plantas fabrican su alimento usando la luz del sol?',
+      options: ['Respiración', 'Fotosíntesis', 'Germinación', 'Polinización'], correctIndex: 1,
+      explanation: 'En la fotosíntesis, las plantas usan luz, agua y aire para fabricar su alimento.',
+      meta: { subject: 'medio', topic: 'seres_vivos', difficulty: 2 },
+    },
+    explanation: 'En la fotosíntesis, las plantas usan luz, agua y aire para fabricar su alimento.',
+    meta: { subject: 'medio', topic: 'seres_vivos', difficulty: 2 },
+  },
+  {
+    id: 'med-ty-02', type: 'typed',
+    prompt: '¿Qué órgano controla lo que pensamos, sentimos y hacemos?',
+    expectedConcept: 'cerebro', keywords: ['cerebro'],
+    exampleAnswers: ['El cerebro', 'Cerebro', 'Es el cerebro'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-02-mc', type: 'singleSelect',
+      prompt: '¿Qué órgano controla lo que pensamos, sentimos y hacemos?',
+      options: ['El corazón', 'El estómago', 'El cerebro', 'El pulmón'], correctIndex: 2,
+      explanation: 'El cerebro recibe la información de los sentidos y da las órdenes al resto del cuerpo.',
+      meta: { subject: 'medio', topic: 'cuerpo_humano', difficulty: 1 },
+    },
+    explanation: 'El cerebro recibe la información de los sentidos y da las órdenes al resto del cuerpo.',
+    meta: { subject: 'medio', topic: 'cuerpo_humano', difficulty: 1 },
+  },
+  {
+    id: 'med-ty-03', type: 'typed',
+    prompt: '¿En qué se convierte el agua líquida cuando se congela?',
+    expectedConcept: 'hielo', keywords: ['hielo'],
+    exampleAnswers: ['Hielo', 'En hielo', 'Se convierte en hielo'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-03-mc', type: 'singleSelect',
+      prompt: '¿En qué se convierte el agua líquida cuando se congela?',
+      options: ['En hielo', 'En vapor', 'En niebla', 'En lluvia'], correctIndex: 0,
+      explanation: 'Por debajo de 0 grados, el agua líquida pasa a estado sólido: hielo.',
+      meta: { subject: 'medio', topic: 'materia', difficulty: 1 },
+    },
+    explanation: 'Por debajo de 0 grados, el agua líquida pasa a estado sólido: hielo.',
+    meta: { subject: 'medio', topic: 'materia', difficulty: 1 },
+  },
+  {
+    id: 'med-ty-04', type: 'typed',
+    prompt: '¿Cómo se llama el cambio de estado en el que un gas pasa a líquido?',
+    expectedConcept: 'condensación', keywords: ['condensacion'],
+    exampleAnswers: ['Condensación', 'La condensación', 'Se llama condensación'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-04-mc', type: 'singleSelect',
+      prompt: '¿Cómo se llama el cambio de estado en el que un gas pasa a líquido?',
+      options: ['Evaporación', 'Fusión', 'Solidificación', 'Condensación'], correctIndex: 3,
+      explanation: 'En la condensación, un gas se enfría y pasa a líquido, como el vapor que forma gotas en un cristal frío.',
+      meta: { subject: 'medio', topic: 'materia', difficulty: 3 },
+    },
+    explanation: 'En la condensación, un gas se enfría y pasa a líquido, como el vapor que forma gotas en un cristal frío.',
+    meta: { subject: 'medio', topic: 'materia', difficulty: 3 },
+  },
+  {
+    id: 'med-ty-05', type: 'typed',
+    prompt: '¿Qué gas del aire necesitamos respirar para vivir?',
+    expectedConcept: 'oxígeno', keywords: ['oxigeno'],
+    exampleAnswers: ['Oxígeno', 'El oxígeno', 'Necesitamos oxígeno'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-05-mc', type: 'singleSelect',
+      prompt: '¿Qué gas del aire necesitamos respirar para vivir?',
+      options: ['Dióxido de carbono', 'Oxígeno', 'Nitrógeno', 'Vapor de agua'], correctIndex: 1,
+      explanation: 'Los pulmones toman el oxígeno del aire y la sangre lo reparte por todo el cuerpo.',
+      meta: { subject: 'medio', topic: 'cuerpo_humano', difficulty: 2 },
+    },
+    explanation: 'Los pulmones toman el oxígeno del aire y la sangre lo reparte por todo el cuerpo.',
+    meta: { subject: 'medio', topic: 'cuerpo_humano', difficulty: 2 },
+  },
+  {
+    id: 'med-ty-06', type: 'typed',
+    prompt: '¿Qué órgano usan los peces para respirar dentro del agua?',
+    expectedConcept: 'branquias', keywords: ['branquias'],
+    exampleAnswers: ['Branquias', 'Las branquias', 'Con las branquias', 'Agallas', 'Las agallas'],
+    fallbackMultipleChoice: {
+      id: 'med-ty-06-mc', type: 'singleSelect',
+      prompt: '¿Qué órgano usan los peces para respirar dentro del agua?',
+      options: ['Los pulmones', 'Las aletas', 'Las branquias', 'Las escamas'], correctIndex: 2,
+      explanation: 'Las branquias (también llamadas agallas) toman el oxígeno que está disuelto en el agua.',
+      meta: { subject: 'medio', topic: 'seres_vivos', difficulty: 2 },
+    },
+    explanation: 'Las branquias (también llamadas agallas) toman el oxígeno que está disuelto en el agua.',
+    meta: { subject: 'medio', topic: 'seres_vivos', difficulty: 2 },
+  },
+];
+
+export const REFS: Record<string, BatchRef> = {
+  'med-ss-01': { row: 'M1', source: SCHOOL },
+  'med-ss-02': { row: 'M1', source: 'Estilo del ítem 11 de la prueba de ciencia de 6è 2025 (experimento con una sola variable)' },
+  'med-ss-03': { row: 'M2', source: SCHOOL },
+  'med-ss-04': { row: 'M2', source: SCHOOL },
+  'med-ss-05': { row: 'M3', source: SCHOOL },
+  'med-ss-06': { row: 'M3', source: SCHOOL },
+  'med-ss-07': { row: 'M3', source: SCHOOL },
+  'med-ss-08': { row: 'M4', source: SCHOOL },
+  'med-ss-09': { row: 'M5', source: SCHOOL },
+  'med-ss-10': { row: 'M6', source: SCHOOL },
+  'med-ss-11': { row: 'M6', source: SCHOOL },
+  'med-ss-12': { row: 'M6', source: SCHOOL },
+  'med-ss-13': { row: 'M6', source: SCHOOL },
+  'med-ss-14': { row: 'M7', source: SCHOOL },
+  'med-ss-15': { row: 'S1', source: 'Texto del cuaderno 2 de 4t 2026 (el compost y los organismos que descomponen)' },
+  'med-ss-16': { row: 'S3', source: SCHOOL },
+  'med-ss-17': { row: 'S3', source: SCHOOL },
+  'med-ss-18': { row: 'S2', source: SCHOOL },
+  'med-ms-01': { row: 'M2', source: SCHOOL },
+  'med-ms-02': { row: 'M3', source: SCHOOL },
+  'med-ms-03': { row: 'M4', source: 'Decret 175/2022, funciones vitales (obtención de energía, relación, perpetuación)' },
+  'med-ms-04': { row: 'M6', source: SCHOOL },
+  'med-ms-05': { row: 'M7', source: 'Decret 175/2022, normas de seguridad y privacidad en internet' },
+  'med-ms-06': { row: 'S1', source: SCHOOL },
+  'med-ty-01': { row: 'M3', source: SCHOOL },
+  'med-ty-02': { row: 'M4', source: SCHOOL },
+  'med-ty-03': { row: 'M6', source: SCHOOL },
+  'med-ty-04': { row: 'S3', source: 'Estilo del ítem 19 de la prueba de ciencia de 6è 2025 (nombre del cambio de estado)' },
+  'med-ty-05': { row: 'M4', source: SCHOOL },
+  'med-ty-06': { row: 'M3', source: SCHOOL },
+};
