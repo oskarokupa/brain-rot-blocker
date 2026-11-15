@@ -177,6 +177,27 @@ describe('locking', () => {
     expect(isLocked(state, T0)).toBe(true);
   });
 
+  it('locks on the owed video when a different one starts and the leave was never reported', () => {
+    // A tab refresh after the threshold: no videoLeft ever arrives for v1.
+    const { state, effects } = run(initialState(T0), [
+      ...play('v1', 16),
+      [provider({ type: 'videoStarted', metadata: meta('v2'), atSeconds: 0 })],
+    ]);
+    expect(state.phase).toBe('quizLocked');
+    expect(state.owedVideoId).toBe('v1');
+    expect(isLocked(state, T0)).toBe(true);
+    expect(effects).toContainEqual({ type: 'presentQuiz', videoId: 'v1' });
+  });
+
+  it('keeps preparing when the owed video itself restarts, as after a refresh', () => {
+    const { state } = run(initialState(T0), [
+      ...play('v1', 16),
+      [provider({ type: 'videoStarted', metadata: meta('v1'), atSeconds: 0 })],
+    ]);
+    expect(state.phase).toBe('quizPreparing');
+    expect(isLocked(state, T0)).toBe(false);
+  });
+
   it('emits engageLock exactly once across a lock and unlock cycle', () => {
     const { effects } = run(initialState(T0), [
       ...play('v1', 16),

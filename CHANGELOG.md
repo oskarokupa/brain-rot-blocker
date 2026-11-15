@@ -2,6 +2,40 @@
 
 All notable changes to this project are logged here, most recent first.
 
+## 2026-10-07 - Phase 8: child-facing UI and rewards (not yet tested live)
+
+The challenge now looks like a screen YouTube Kids itself would show, speaks
+English or Spanish, and pays out cosmetic rewards. The lock is unchanged: it
+is still the redirect to `ui/quiz.html`, by the parent's decision.
+
+- Tokens read off the live youtubekids.com with computed styles: brand red
+  `#d90a17`, greys `#f4f4f4` / `#131313` / `#565656`, card shadow
+  `0 2px 4px rgba(0,0,0,.24)`, 6px buttons, 32px pills, uppercase Roboto 500
+  button labels, `0.1s ease-in` transitions. No logo or play mark anywhere.
+- The site's heading face is YT Sans, which cannot be shipped. Headings fall
+  back to Arial Rounded MT Bold (installed on every Mac) through a local
+  `@font-face` alias. Roboto is bundled from `@fontsource/roboto` (a new dev
+  dependency, three woff2 files copied at build) so the page never waits on a
+  network font.
+- The site has no success, "not quite" or reward colour and no dark theme on
+  the web. Those are additions, documented at the top of `src/ui/styles.css`.
+- New screens: intro with the pass mark, restyled single, multi and typed
+  questions, an in-place "checking" state, feedback with XP, swaps left, the
+  cleared screen with a rewards card, the kind miss screen into remediation,
+  both remediation endings, and the full-meter badge reveal.
+- UI text follows the language of the questions (`src/ui/strings.ts`):
+  Spanish for bank quizzes, English for model-written ones.
+- Rewards (`src/rewards/`): 10 XP per right answer, 25 XP perfect bonus, one
+  meter step per cleared round and two for a perfect challenge, a streak that
+  only the main challenge can extend or reset, and one badge from a set of 12
+  each time the 10-step meter fills. Recorded after the lock transition, so a
+  rewards storage fault cannot hold up an unlock. Nothing reads rewards to
+  decide anything about viewing.
+- Behaviour changes worth knowing when testing: the feedback screen now waits
+  3 to 9 seconds depending on the length of the explanation (was a flat 1.8),
+  and the cleared screen returns to the videos after 15 seconds (was 3), or
+  waits for a tap when the meter is full.
+
 ## 2026-10-05 - Phase 4: LLM integration
 
 Real video-based questions. Every quiz is now about the video she actually

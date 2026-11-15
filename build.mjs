@@ -35,6 +35,12 @@ async function copyStatic() {
   await cp('public', 'dist', { recursive: true });
   await cp('src/ui/quiz.html', 'dist/ui/quiz.html');
   await cp('src/ui/styles.css', 'dist/ui/styles.css');
+  // Roboto is bundled so the challenge never waits on a network font. Latin
+  // covers both English and Spanish.
+  for (const weight of [400, 500, 700]) {
+    const file = `roboto-latin-${weight}-normal.woff2`;
+    await cp(`node_modules/@fontsource/roboto/files/${file}`, `dist/ui/fonts/${file}`);
+  }
   await cp('src/parent/pinStyles.css', 'dist/ui/pinStyles.css');
   await cp('src/parent/pinStyles.css', 'dist/parent/pinStyles.css');
   await cp('src/parent/options.html', 'dist/parent/options.html');

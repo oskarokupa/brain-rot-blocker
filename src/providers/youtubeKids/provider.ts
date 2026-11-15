@@ -191,6 +191,14 @@ function watchForNavigation(): void {
   setInterval(check, 500);
   window.addEventListener('popstate', check);
   window.addEventListener('yt-navigate-finish', check);
+
+  // A refresh or a closed tab is leaving the video as much as an in-app
+  // navigation is, but none of the checks above ever see it: the page is gone
+  // before the next poll. Without this the worker never hears about the leave
+  // and an owed challenge waits on an ending that cannot arrive.
+  window.addEventListener('pagehide', () => {
+    if (currentVideoId) emit({ type: 'videoLeft', videoId: currentVideoId, nextVideoId: null });
+  });
 }
 
 /* ------------------------------------------------------------------ *

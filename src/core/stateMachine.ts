@@ -257,6 +257,27 @@ function applyProviderEvent(
 ): PersistedState {
   switch (event.type) {
     case 'videoStarted': {
+      // A different video starting while a challenge is still only being
+      // prepared means she left the owed video and the leave was never
+      // reported: a tab refresh or a closed tab ends the content script
+      // before it can say so. Left as it was, the obligation stayed pinned to
+      // the old video, the new video's own ending was ignored because it was
+      // not the owed one, and the challenge surfaced much later about a video
+      // she had long since left. The leave is honoured here instead, late but
+      // at the first moment it can be seen.
+      if (
+        state.phase === 'quizPreparing' &&
+        state.owedVideoId &&
+        state.owedVideoId !== event.metadata.videoId
+      ) {
+        effects.push({ type: 'pausePlayback' });
+        effects.push({ type: 'presentQuiz', videoId: state.owedVideoId });
+        return {
+          ...withPhase(state, 'quizLocked', now),
+          renderDeadlineAt: now + WATCHDOG_MS,
+        };
+      }
+
       // Starting a new video never clears an outstanding obligation.
       const carried = state.carryOverSeconds + state.activeWatchedSeconds;
       return {

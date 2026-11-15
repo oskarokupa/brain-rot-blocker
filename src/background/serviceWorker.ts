@@ -35,6 +35,7 @@ import { apiKeyHint, hasApiKey, setApiKey } from '../quiz/llm/apiKeyStore.js';
 import type { AnswerResponse } from '../quiz/schema.js';
 import {
   discardCurrentQuestion,
+  ensureQuizFor,
   getActiveQuestion,
   startMainQuiz,
   startRemediationRound,
@@ -70,6 +71,16 @@ setEffectRunner(async (effects: Effect[]) => {
         break;
 
       case 'presentQuiz':
+        // The challenge has to be about the owed video before the tab opens.
+        // A failure here must not stop the screen appearing: the page reports
+        // a missing challenge itself and the worker then fails open.
+        if (effect.videoId) {
+          const owed = effect.videoId;
+          await ensureQuizFor(owed, durations.get(owed) ?? null, {
+            transcriptText: transcriptCache.get(owed)?.text ?? null,
+            metadata: metadataCache.get(owed) ?? null,
+          }).catch((err) => console.error('[brb] could not prepare the owed quiz', err));
+        }
         await presentQuiz();
         break;
 

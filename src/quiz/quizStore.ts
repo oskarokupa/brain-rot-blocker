@@ -9,7 +9,7 @@
  * interleave with each other's reads and writes.
  */
 
-import { CONFIG } from '../config.js';
+import { CONFIG, passMarkForCount } from '../config.js';
 import { dispatch } from '../core/store.js';
 import type { GenerationContent } from './llm/generate.js';
 import { generateQuiz } from './llm/generate.js';
@@ -32,7 +32,9 @@ import {
   type RecentIds,
   type VideoHistory,
 } from './history.js';
-import type { AnswerResponse, Question, Quiz } from './schema.js';
+import type { RewardSummary } from '../rewards/rewards.js';
+import { recordRound } from '../rewards/rewardsStore.js';
+import type { AnswerResponse, Question, Quiz, QuizSource } from './schema.js';
 
 const QUIZ_KEY = 'quiz.v1';
 const RECENT_IDS_KEY = 'quizRecentIds.v1';
@@ -90,30 +92,67 @@ async function recordVideoHistory(videoId: string | null, prompts: string[]): Pr
  * Starting a challenge
  * ------------------------------------------------------------------ */
 
+/** Builds a challenge for the video and stores it as the active one. */
+async function buildAndStore(
+  videoId: string | null,
+  durationSeconds: number | null,
+  content: GenerationContent,
+): Promise<void> {
+  const recent = await readRecentIds();
+  const priorPromptsForVideo = videoId ? promptsForVideo(await readVideoHistory(), videoId) : [];
+
+  // generateQuiz is the one place the transcript -> metadata -> bank degrade
+  // chain lives. Whatever comes back is already a complete, validated Quiz
+  // regardless of which tier produced it.
+  const quiz = await generateQuiz({
+    videoId,
+    durationSeconds,
+    content,
+    recentQuestionIds: recent,
+    priorPromptsForVideo,
+  });
+  const roundState = startRound(quiz.questions, quiz.spares, CONFIG.quiz.maxDiscardsPerQuiz);
+
+  await writeDoc({ quiz, round: 0, roundState });
+  await addRecentIds(quiz.questions.map((q) => q.id));
+  await recordVideoHistory(videoId, quiz.questions.map((q) => q.prompt));
+}
+
 export function startMainQuiz(
   videoId: string | null,
   durationSeconds: number | null,
   content: GenerationContent,
 ): Promise<void> {
   return serialize(async () => {
-    const recent = await readRecentIds();
-    const priorPromptsForVideo = videoId ? promptsForVideo(await readVideoHistory(), videoId) : [];
+    // Whatever was stored belongs to an earlier obligation. A challenge that
+    // ended in a parent skip or a fault leaves its document behind, and it
+    // must not be what she is shown if this generation is cut short.
+    await writeDoc(null);
+    await buildAndStore(videoId, durationSeconds, content);
+  });
+}
 
-    // generateQuiz is the one place the transcript -> metadata -> bank degrade
-    // chain lives. Whatever comes back is already a complete, validated Quiz
-    // regardless of which tier produced it.
-    const quiz = await generateQuiz({
-      videoId,
-      durationSeconds,
-      content,
-      recentQuestionIds: recent,
-      priorPromptsForVideo,
-    });
-    const roundState = startRound(quiz.questions, quiz.spares, CONFIG.quiz.maxDiscardsPerQuiz);
-
-    await writeDoc({ quiz, round: 0, roundState });
-    await addRecentIds(quiz.questions.map((q) => q.id));
-    await recordVideoHistory(videoId, quiz.questions.map((q) => q.prompt));
+/**
+ * Guarantees the stored challenge is about the video that is actually owed,
+ * called right before the challenge is shown. Normally a no-op, because
+ * generation started at the threshold has already stored it. It matters when
+ * that generation never finished (the worker restarted part way through) or a
+ * document from an earlier video is still in storage: without this check the
+ * screen showed whatever was stored, about whichever video that happened to be.
+ * A matching document is left alone, so a challenge she is part way through
+ * keeps its progress.
+ */
+export function ensureQuizFor(
+  videoId: string,
+  durationSeconds: number | null,
+  content: GenerationContent,
+): Promise<void> {
+  return serialize(async () => {
+    const doc = await readDoc();
+    if (doc && doc.quiz.videoId === videoId) return;
+    if (doc) console.warn('[brb] stored quiz was for', doc.quiz.videoId, 'but', videoId, 'is owed. Rebuilding.');
+    await writeDoc(null);
+    await buildAndStore(videoId, durationSeconds, content);
   });
 }
 
@@ -149,7 +188,21 @@ export interface ActiveQuestionView {
   index: number;
   total: number;
   discardsLeft: number;
+  maxDiscards: number;
   round: number;
+  /** Correct answers this round needs. */
+  passMark: number;
+  /** Where the questions came from, so the screen can say when they are general ones. */
+  source: QuizSource;
+  /** The language the questions are written in. The screen's own text follows it. */
+  language: UiLanguage;
+}
+
+export type UiLanguage = 'en' | 'es';
+
+/** Bank questions are Spanish. Everything the model writes is English. */
+function languageOf(quiz: Quiz): UiLanguage {
+  return quiz.source === 'fallback' ? CONFIG.fallback.language : 'en';
 }
 
 export function getActiveQuestion(): Promise<ActiveQuestionView | null> {
@@ -163,7 +216,11 @@ export function getActiveQuestion(): Promise<ActiveQuestionView | null> {
       index: doc.roundState.answers.length,
       total: doc.roundState.questions.length,
       discardsLeft: doc.roundState.maxDiscards - doc.roundState.discardsUsed,
+      maxDiscards: doc.roundState.maxDiscards,
       round: doc.round,
+      passMark: passMarkForCount(doc.roundState.questions.length),
+      source: doc.quiz.source,
+      language: languageOf(doc.quiz),
     };
   });
 }
@@ -173,13 +230,18 @@ export function getActiveQuestion(): Promise<ActiveQuestionView | null> {
  * ------------------------------------------------------------------ */
 
 export type SubmitOutcome =
-  | { kind: 'answered'; correct: boolean; explanation: string }
+  | { kind: 'answered'; correct: boolean; explanation: string; xp: number }
   | {
       kind: 'roundComplete';
       correct: boolean;
       explanation: string;
+      xp: number;
       correctCount: number;
       total: number;
+      /** Whether this round's score met its pass mark. */
+      passed: boolean;
+      /** Null only if the rewards store failed, which must never fail the round. */
+      rewards: RewardSummary | null;
       /**
        * Whether the obligation actually ended, which is not the same question
        * as whether the round's score passed. The final remediation round
@@ -193,45 +255,81 @@ export type SubmitOutcome =
   | { kind: 'needsRetry'; question: Question }
   | { kind: 'noActiveQuestion' };
 
-/** Persists a round and reports it, finishing the round if it is complete. */
-async function respondWithRound(
+/** A round that has just been completed and still has to be reported. */
+interface FinishedRound {
+  round: number;
+  correctCount: number;
+  total: number;
+  passed: boolean;
+}
+
+interface Settled {
+  outcome: SubmitOutcome;
+  /** Set when this answer completed the round. */
+  finished: FinishedRound | null;
+}
+
+/**
+ * Whether the obligation ends with this round. It survives only if another
+ * round follows: a failed main quiz (remediation round 1 comes next) or a
+ * failed remediation round short of the cap. Everything else ends it,
+ * including failing the final remediation round, which the state machine
+ * clears unconditionally.
+ */
+function endsObligation(round: number, passed: boolean): boolean {
+  return passed || round >= CONFIG.remediation.maxRounds;
+}
+
+/** Persists a round and describes what the answer led to. */
+async function settleRound(
   doc: QuizDocument,
   question: Question,
   roundState: RoundState,
   correct: boolean,
-): Promise<SubmitOutcome> {
-  await writeDoc({ ...doc, roundState });
+): Promise<Settled> {
+  const xp = correct ? CONFIG.rewards.xpPerCorrectAnswer : 0;
 
   if (!isRoundComplete(roundState)) {
-    return { kind: 'answered', correct, explanation: question.explanation };
+    await writeDoc({ ...doc, roundState });
+    return { outcome: { kind: 'answered', correct, explanation: question.explanation, xp }, finished: null };
   }
 
   const score = scoreRound(roundState);
-  const cleared = await finishRound(doc.round, score.passed);
+  const cleared = endsObligation(doc.round, score.passed);
+  // A finished challenge leaves nothing behind. One with a round still to
+  // come keeps its document, because that round is dealt from its pool.
+  await writeDoc(cleared ? null : { ...doc, roundState });
+
   return {
-    kind: 'roundComplete',
-    correct,
-    explanation: question.explanation,
-    correctCount: score.correctCount,
-    total: score.total,
-    cleared,
+    outcome: {
+      kind: 'roundComplete',
+      correct,
+      explanation: question.explanation,
+      xp,
+      correctCount: score.correctCount,
+      total: score.total,
+      passed: score.passed,
+      rewards: null,
+      cleared,
+    },
+    finished: { round: doc.round, correctCount: score.correctCount, total: score.total, passed: score.passed },
   };
 }
 
-export function submitAnswer(response: AnswerResponse): Promise<SubmitOutcome> {
+function settleAnswer(response: AnswerResponse): Promise<Settled> {
   return serialize(async () => {
+    const none: Settled = { outcome: { kind: 'noActiveQuestion' }, finished: null };
+
     const doc = await readDoc();
-    if (!doc) return { kind: 'noActiveQuestion' };
+    if (!doc) return none;
 
     const question = currentQuestion(doc.roundState);
-    if (!question) return { kind: 'noActiveQuestion' };
+    if (!question) return none;
 
     const result = submitToRound(doc.roundState, response);
 
     if (result.uncertain) {
-      if (question.type !== 'typed' || response.type !== 'typed') {
-        return { kind: 'noActiveQuestion' };
-      }
+      if (question.type !== 'typed' || response.type !== 'typed') return none;
 
       // Local matching could not reach a confident verdict. The LLM is the
       // next tier up; a hard timeout on that call is what keeps this from
@@ -239,7 +337,7 @@ export function submitAnswer(response: AnswerResponse): Promise<SubmitOutcome> {
       const llmVerdict = await gradeTypedWithLlm(question.expectedConcept, response.text);
       if (llmVerdict !== null) {
         const roundState = recordExternalVerdict(doc.roundState, question, response, llmVerdict);
-        return respondWithRound(doc, question, roundState, llmVerdict);
+        return settleRound(doc, question, roundState, llmVerdict);
       }
 
       // No LLM verdict available at all (no key, network failure, timeout):
@@ -249,30 +347,42 @@ export function submitAnswer(response: AnswerResponse): Promise<SubmitOutcome> {
       const replacement = question.fallbackMultipleChoice;
       const roundState = replaceCurrentQuestion(doc.roundState, replacement);
       await writeDoc({ ...doc, roundState });
-      return { kind: 'needsRetry', question: replacement };
+      return { outcome: { kind: 'needsRetry', question: replacement }, finished: null };
     }
 
-    return respondWithRound(doc, question, result.round, result.correct);
+    return settleRound(doc, question, result.round, result.correct);
   });
 }
 
-/** Dispatches the round's outcome and returns whether the obligation ended. */
-async function finishRound(round: number, passed: boolean): Promise<boolean> {
-  if (round === 0) {
-    await dispatch({ type: passed ? 'quizPassed' : 'quizFailed' });
+/**
+ * Grades an answer and, when it completes a round, reports the round to the
+ * lock state machine.
+ *
+ * The report happens after this module's queue has been released, never
+ * inside it. A missed round makes the state machine ask for the next
+ * remediation round, and that request comes straight back into this queue. It
+ * used to be made while the queue was still held by the answer that caused
+ * it, so the two waited on each other forever and she sat on "Checking..."
+ * with no way forward.
+ */
+export async function submitAnswer(response: AnswerResponse): Promise<SubmitOutcome> {
+  const { outcome, finished } = await settleAnswer(response);
+  if (!finished || outcome.kind !== 'roundComplete') return outcome;
+
+  if (finished.round === 0) {
+    await dispatch({ type: finished.passed ? 'quizPassed' : 'quizFailed' });
   } else {
-    await dispatch({ type: passed ? 'remediationPassed' : 'remediationFailed' });
+    await dispatch({ type: finished.passed ? 'remediationPassed' : 'remediationFailed' });
   }
 
-  // The obligation survives only if the state machine is about to ask for
-  // another round: a failed main quiz (round moves to remediation round 1) or
-  // a failed remediation round short of the cap. Everything else — a pass at
-  // any point, or failing the final remediation round, which the state
-  // machine clears unconditionally — ends it, which is the "cleared" this
-  // function reports back regardless of the raw score.
-  const anotherRoundFollows = !passed && round < CONFIG.remediation.maxRounds;
-  if (!anotherRoundFollows) await writeDoc(null);
-  return !anotherRoundFollows;
+  // After the lock transition, never before it: rewards are a record of the
+  // round, and a storage fault here must not be able to hold up an unlock.
+  const rewards = await recordRound(finished).catch((err) => {
+    console.error('[brb] rewards not recorded', err);
+    return null;
+  });
+
+  return { ...outcome, rewards };
 }
 
 export function discardCurrentQuestion(): Promise<{ ok: boolean; question: Question | null }> {
